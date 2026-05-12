@@ -4,31 +4,20 @@ import 'package:intl/intl.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/status_badge.dart';
 import '../../../domain/models/crop.dart';
+import '../../../domain/models/crop_type.dart';
+import '../../../domain/models/sync_status.dart';
 
 class CropListCard extends StatelessWidget {
-  const CropListCard({super.key, required this.crop});
+  const CropListCard({super.key, required this.crop, this.onRetrySync});
 
   final Crop crop;
-
-  StatusBadge _badge() {
-    switch (crop.status) {
-      case CropStatus.active:
-        return const StatusBadge.active();
-      case CropStatus.monitoring:
-        return const StatusBadge.monitoring();
-      case CropStatus.harvested:
-        return const StatusBadge.harvested();
-    }
-  }
+  /// Llamado cuando el usuario toca el badge de error para reintentar sync.
+  final VoidCallback? onRetrySync;
 
   @override
   Widget build(BuildContext context) {
     final df = DateFormat('dd/MM/yyyy');
-    final detailLabel = crop.status == CropStatus.harvested
-        ? 'Ver historial'
-        : 'Ver detalle';
 
     return InkWell(
       onTap: () => context.pushNamed(
@@ -52,27 +41,30 @@ class CropListCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: crop.iconBackground,
+                    color: crop.cropType.iconBackground,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
-                    IconData(crop.iconCodePoint, fontFamily: 'MaterialIcons'),
-                    color: crop.iconForeground,
+                    crop.cropType.icon,
+                    color: crop.cropType.iconForeground,
                     size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    crop.name,
+                    crop.cropType.label,
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 17,
                     ),
                   ),
                 ),
-                _badge(),
+                _SyncStatusBadge(
+                  status: crop.syncStatus,
+                  onRetry: onRetrySync,
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -81,13 +73,19 @@ class CropListCard extends StatelessWidget {
                 Expanded(
                   child: _Stat(
                     label: 'FECHA DE SIEMBRA',
-                    value: df.format(crop.plantedAt),
+                    value: df.format(crop.sownDate),
                   ),
                 ),
                 Expanded(
                   child: _Stat(
                     label: 'ÁREA',
-                    value: '${crop.areaHa} ha',
+                    value: '${crop.areaHectares} ha',
+                  ),
+                ),
+                Expanded(
+                  child: _Stat(
+                    label: 'MUNICIPIO',
+                    value: crop.municipality.label,
                   ),
                 ),
               ],
@@ -97,16 +95,16 @@ class CropListCard extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: const [
                   Text(
-                    detailLabel,
-                    style: const TextStyle(
+                    'Ver detalle',
+                    style: TextStyle(
                       color: AppColors.primaryGreen,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(
+                  SizedBox(width: 4),
+                  Icon(
                     Icons.arrow_forward,
                     color: AppColors.primaryGreen,
                     size: 18,
@@ -118,6 +116,47 @@ class CropListCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SyncStatusBadge extends StatelessWidget {
+  const _SyncStatusBadge({required this.status, this.onRetry});
+  final SyncStatus status;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (status) {
+      SyncStatus.SYNCED => const Tooltip(
+          message: 'Sincronizado',
+          child: Icon(
+            Icons.cloud_done_outlined,
+            size: 20,
+            color: AppColors.primaryGreen,
+          ),
+        ),
+      SyncStatus.PENDING => const Tooltip(
+          message: 'Pendiente de sincronización',
+          child: Icon(
+            Icons.cloud_upload_outlined,
+            size: 20,
+            color: AppColors.warningAmber,
+          ),
+        ),
+      SyncStatus.ERROR => GestureDetector(
+          onTap: onRetry,
+          child: Tooltip(
+            message: 'Error de sincronización. Toca para reintentar.',
+            child: Icon(
+              Icons.cloud_off,
+              size: 20,
+              color: onRetry != null
+                  ? AppColors.alertRed
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ),
+    };
   }
 }
 
@@ -135,7 +174,7 @@ class _Stat extends StatelessWidget {
           label,
           style: const TextStyle(
             color: AppColors.textMuted,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.4,
           ),
@@ -145,8 +184,9 @@ class _Stat extends StatelessWidget {
           value,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 14,
+            fontSize: 13,
           ),
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

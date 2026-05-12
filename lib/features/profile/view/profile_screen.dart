@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/branded_app_bar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../domain/models/profile.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../crops/crops_providers.dart';
 import '../../home/home_providers.dart';
+import '../../sync/sync_coordinator.dart';
 import '../widgets/profile_section_tile.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -16,23 +20,31 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentProfileProvider);
-    final fallback = ref.watch(fallbackProfileProvider);
     final online = ref.watch(isOnlineProvider).value ?? true;
-
-    final profile = profileAsync.value ?? fallback;
+    final pendingCount = ref.watch(pendingSyncCountProvider).value ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: BrandedAppBar(online: online),
+      appBar: BrandedAppBar(
+        online: online,
+        pendingCount: pendingCount,
+        isSyncing: ref.watch(syncCoordinatorProvider),
+        onSyncTap: () => requestSyncFromAppBar(context, ref),
+      ),
       body: SafeArea(
         top: false,
         child: AdaptiveBody(
           child: profileAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) =>
-                _ProfileBody(profile: profile, ref: ref, online: online),
-            data: (_) =>
-                _ProfileBody(profile: profile, ref: ref, online: online),
+            error: (_, _) => const Center(
+              child: Text('No se pudo cargar el perfil.'),
+            ),
+            data: (profile) {
+              if (profile == null) {
+                return const Center(child: Text('Sin sesión activa.'));
+              }
+              return _ProfileBody(profile: profile, ref: ref, online: online);
+            },
           ),
         ),
       ),
@@ -139,7 +151,7 @@ class _ProfileBody extends StatelessWidget {
             ProfileSectionTile(
               icon: Icons.person_outline,
               title: 'Editar datos personales',
-              onTap: () {},
+              onTap: () => context.push(AppRoutes.profileEdit),
             ),
             ProfileSectionTile(
               icon: Icons.lock_outline,
@@ -159,7 +171,7 @@ class _ProfileBody extends StatelessWidget {
                   ? 'Última vez: ${_formatDate(profile.syncedAt!)}'
                   : 'Sin sincronizar',
               trailing: const SizedBox.shrink(),
-              onTap: () {},
+              onTap: () => requestSyncFromAppBar(context, ref),
             ),
             ProfileSectionTile(
               icon: Icons.storage_outlined,

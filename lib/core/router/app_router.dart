@@ -12,8 +12,10 @@ import '../../features/auth/view/login_screen.dart';
 import '../../features/auth/view/register_screen.dart';
 import '../../features/crops/view/crop_detail_screen.dart';
 import '../../features/crops/view/crops_list_screen.dart';
+import '../../features/crops/view/edit_crop_screen.dart';
 import '../../features/crops/view/new_crop_screen.dart';
 import '../../features/home/view/home_screen.dart';
+import '../../features/profile/view/edit_profile_screen.dart';
 import '../../features/profile/view/profile_screen.dart';
 import '../../features/splash/view/splash_screen.dart';
 import '../widgets/scaffold_with_nav_bar.dart';
@@ -116,6 +118,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       final id = state.pathParameters['id'] ?? '';
                       return CropDetailScreen(cropId: id);
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        name: AppRoutes.cropsEditName,
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) {
+                          final crop =
+                              state.extra as dynamic;
+                          return EditCropScreen(crop: crop);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -138,6 +152,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.profile,
                 name: AppRoutes.profileName,
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    name: AppRoutes.profileEditName,
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) => const EditProfileScreen(),
+                  ),
+                ],
               ),
             ],
           ),

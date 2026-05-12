@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
+import '../../home/home_providers.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/auth_text_field.dart';
 
@@ -21,6 +23,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (Supabase.instance.client.auth.currentSession != null) {
+        context.goNamed(AppRoutes.homeName);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -29,6 +42,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final online = ref.read(isOnlineProvider).value ?? false;
+    if (!online) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sin conexión. Necesitas internet para iniciar sesión con correo '
+            'y contraseña. Si ya entraste antes, la app puede abrir sola con tu '
+            'sesión guardada.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     await ref.read(authControllerProvider.notifier).signIn(
           email: _emailCtrl.text.trim(),

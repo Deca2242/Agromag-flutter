@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../domain/models/chat_message.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/brand_logo.dart';
+import '../../home/home_providers.dart';
 import '../assistant_providers.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/chat_input.dart';
-import '../widgets/suggestion_chip.dart';
 
 class AssistantScreen extends ConsumerWidget {
   const AssistantScreen({super.key});
@@ -16,7 +17,9 @@ class AssistantScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = ref.watch(chatMessagesProvider);
-    final suggestions = ref.watch(chatSuggestionsProvider);
+    final notifier = ref.read(chatMessagesProvider.notifier);
+    final isOnline = ref.watch(isOnlineProvider).value ?? true;
+    final isWaiting = notifier.isWaiting;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -43,9 +46,9 @@ class AssistantScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
-            tooltip: 'Más opciones',
-            icon: const Icon(Icons.more_vert),
+            onPressed: () => notifier.clearHistory(),
+            tooltip: 'Nueva conversación',
+            icon: const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -54,21 +57,34 @@ class AssistantScreen extends ConsumerWidget {
         child: AdaptiveBody(
           child: Column(
             children: [
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  itemCount: messages.length + 1,
-                  separatorBuilder: (_, _) => const SizedBox(height: 14),
-                  itemBuilder: (context, index) {
-                    if (index == 1) {
-                      return _SuggestionsRow(suggestions: suggestions);
-                    }
-                    final messageIndex = index > 1 ? index - 1 : index;
-                    return ChatBubble(message: messages[messageIndex]);
-                  },
+              if (!isOnline)
+                Container(
+                  width: double.infinity,
+                  color: AppColors.alertRed.withValues(alpha: 0.1),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.cloud_off,
+                          size: 16, color: AppColors.alertRed),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'El asistente requiere conexión a internet.',
+                          style: TextStyle(
+                              color: AppColors.alertRed, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              Expanded(
+                child: _MessagesList(messages: messages),
               ),
-              const ChatInput(),
+              ChatInput(
+                enabled: isOnline && !isWaiting,
+                onSend: notifier.sendMessage,
+              ),
             ],
           ),
         ),
@@ -77,23 +93,51 @@ class AssistantScreen extends ConsumerWidget {
   }
 }
 
-class _SuggestionsRow extends StatelessWidget {
-  const _SuggestionsRow({required this.suggestions});
-  final List<String> suggestions;
+class _MessagesList extends StatefulWidget {
+  const _MessagesList({required this.messages});
+
+  final List<ChatMessage> messages;
+
+  @override
+  State<_MessagesList> createState() => _MessagesListState();
+}
+
+class _MessagesListState extends State<_MessagesList> {
+  final _scrollCtrl = ScrollController();
+
+  @override
+  void didUpdateWidget(_MessagesList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.messages.length != oldWidget.messages.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollCtrl.hasClients) {
+          _scrollCtrl.animateTo(
+            _scrollCtrl.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (var i = 0; i < suggestions.length; i++)
-          SuggestionChip(
-            label: suggestions[i],
-            highlight: i == 0,
-            onTap: () {},
-          ),
-      ],
+    final messages = widget.messages;
+    return ListView.separated(
+      controller: _scrollCtrl,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      itemCount: messages.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 14),
+      itemBuilder: (context, index) {
+        return ChatBubble(message: messages[index]);
+      },
     );
   }
 }

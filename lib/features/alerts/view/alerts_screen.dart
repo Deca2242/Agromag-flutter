@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/branded_app_bar.dart';
+import '../../crops/crops_providers.dart';
 import '../../home/home_providers.dart';
+import '../../sync/sync_coordinator.dart';
 import '../alerts_providers.dart';
 import '../widgets/alert_card.dart';
 import '../widgets/alert_filter_chips.dart';
@@ -16,10 +18,16 @@ class AlertsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final alerts = ref.watch(filteredAlertsProvider);
     final online = ref.watch(isOnlineProvider).value ?? true;
+    final pendingCount = ref.watch(pendingSyncCountProvider).value ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: BrandedAppBar(online: online),
+      appBar: BrandedAppBar(
+        online: online,
+        pendingCount: pendingCount,
+        isSyncing: ref.watch(syncCoordinatorProvider),
+        onSyncTap: () => requestSyncFromAppBar(context, ref),
+      ),
       body: SafeArea(
         top: false,
         child: AdaptiveBody(

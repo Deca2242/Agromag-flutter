@@ -28,11 +28,32 @@ class ProfileLocalDao {
     return Profile.fromDbMap(rows.first);
   }
 
-  Future<void> upsert(Profile profile) async {
+  Future<void> upsert(Profile profile, {bool pendingUpdate = false}) async {
+    final map = profile.toDbMap();
+    map['pending_update'] = pendingUpdate ? 1 : 0;
     await LocalDb.instance.db.insert(
       'profile',
-      profile.toDbMap(),
+      map,
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Profile?> findPendingUpdate() async {
+    final rows = await LocalDb.instance.db.query(
+      'profile',
+      where: 'pending_update = 1',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Profile.fromDbMap(rows.first);
+  }
+
+  Future<void> clearPendingFlag(String id) async {
+    await LocalDb.instance.db.update(
+      'profile',
+      {'pending_update': 0},
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 

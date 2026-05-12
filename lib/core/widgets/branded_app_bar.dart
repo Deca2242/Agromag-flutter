@@ -11,12 +11,21 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showOfflineIcon = true,
     this.online = false,
     this.leading,
+    this.pendingCount = 0,
+    this.isSyncing = false,
+    this.onSyncTap,
   });
 
   final bool showMenu;
   final bool showOfflineIcon;
   final bool online;
   final Widget? leading;
+  /// Número de elementos pendientes de sincronizar (badge).
+  final int pendingCount;
+  /// Mientras el coordinador ejecuta [requestSync].
+  final bool isSyncing;
+  /// Sincronización manual; si es null no se muestra el botón de sync.
+  final VoidCallback? onSyncTap;
 
   @override
   Size get preferredSize => const Size.fromHeight(56);
@@ -53,6 +62,57 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        if (onSyncTap != null)
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                onPressed: isSyncing ? null : onSyncTap,
+                tooltip: isSyncing
+                    ? 'Sincronizando…'
+                    : pendingCount > 0
+                        ? '$pendingCount pendiente(s). Toca para sincronizar.'
+                        : 'Sincronizar',
+                icon: isSyncing
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: AppColors.primaryGreen,
+                        ),
+                      )
+                    : Icon(
+                        pendingCount > 0
+                            ? Icons.cloud_upload_outlined
+                            : Icons.sync,
+                        color: pendingCount > 0
+                            ? AppColors.warningAmber
+                            : AppColors.primaryGreen,
+                      ),
+              ),
+              if (pendingCount > 0 && !isSyncing)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: AppColors.alertRed,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$pendingCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         if (showOfflineIcon)
           IconButton(
             onPressed: () {},

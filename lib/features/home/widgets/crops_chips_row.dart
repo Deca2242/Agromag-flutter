@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/models/crop.dart';
+import '../../../domain/models/crop_type.dart';
 
 class CropsChipsRow extends StatelessWidget {
   const CropsChipsRow({super.key, required this.crops});
@@ -24,8 +25,7 @@ class CropsChipsRow extends StatelessWidget {
               onTap: () => context.pushNamed(AppRoutes.cropsNewName),
             );
           }
-          final crop = crops[index];
-          return _CropTile(crop: crop);
+          return _CropTile(crop: crops[index]);
         },
       ),
     );
@@ -41,30 +41,39 @@ class _CropTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 96,
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: crop.iconBackground,
-              shape: BoxShape.circle,
+      child: InkWell(
+        onTap: () => context.pushNamed(
+          AppRoutes.cropsDetailName,
+          pathParameters: {'id': crop.id},
+        ),
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: crop.cropType.iconBackground,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                crop.cropType.emoji,
+                style: const TextStyle(fontSize: 24),
+              ),
             ),
-            alignment: Alignment.center,
-            child: Icon(
-              IconData(crop.iconCodePoint, fontFamily: 'MaterialIcons'),
-              color: crop.iconForeground,
+            const SizedBox(height: 8),
+            Text(
+              crop.cropType.label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            crop.type,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -90,10 +99,7 @@ class _NewCropTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.border,
-                  style: BorderStyle.solid,
-                ),
+                border: Border.all(color: AppColors.border),
               ),
               alignment: Alignment.center,
               child: const Icon(Icons.add, color: AppColors.textSecondary),

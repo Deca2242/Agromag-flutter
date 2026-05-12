@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,10 +10,8 @@ import '../../../core/widgets/brand_logo.dart';
 
 /// Pantalla de carga inicial.
 ///
-/// Espera que Supabase restaure la sesión (ya ocurre dentro de
-/// `Supabase.initialize()` en main.dart) y luego enruta:
-///   - Sesión válida  → /home
-///   - Sin sesión     → /login
+/// Espera a que Supabase emita el estado inicial de auth (sesión restaurada
+/// desde disco) antes de enrutar a /home o /login.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -26,12 +26,31 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigate();
   }
 
+  Future<Session?> _resolveInitialSession() async {
+    final auth = Supabase.instance.client.auth;
+    var session = auth.currentSession;
+    if (session != null) return session;
+
+    try {
+      final ev = await auth.onAuthStateChange.first.timeout(
+        const Duration(seconds: 2),
+      );
+      session = ev.session ?? auth.currentSession;
+    } on TimeoutException {
+      session = auth.currentSession;
+    } catch (_) {
+      session = auth.currentSession;
+    }
+    return session ?? auth.currentSession;
+  }
+
   Future<void> _navigate() async {
-    // Pequeña pausa para que la animación de splash sea visible.
     await Future<void>.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
 
-    final session = Supabase.instance.client.auth.currentSession;
+    final session = await _resolveInitialSession();
+    if (!mounted) return;
+
     if (session != null) {
       context.goNamed(AppRoutes.homeName);
     } else {

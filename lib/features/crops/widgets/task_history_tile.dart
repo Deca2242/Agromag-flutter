@@ -8,11 +8,13 @@ class TaskHistoryTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.when,
+    this.trailing,
   });
 
   final String title;
   final String subtitle;
   final String when;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,10 @@ class TaskHistoryTile extends StatelessWidget {
               fontSize: 12,
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 4),
+            trailing!,
+          ],
         ],
       ),
     );

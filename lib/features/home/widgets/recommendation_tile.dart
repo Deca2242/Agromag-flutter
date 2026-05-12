@@ -5,9 +5,18 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../domain/models/recommendation.dart';
 
 class RecommendationTile extends StatelessWidget {
-  const RecommendationTile({super.key, required this.recommendation});
+  const RecommendationTile({
+    super.key,
+    required this.recommendation,
+    this.cropLabel,
+    this.onOpenCrop,
+    this.onTap,
+  });
 
   final Recommendation recommendation;
+  final String? cropLabel;
+  final VoidCallback? onOpenCrop;
+  final VoidCallback? onTap;
 
   StatusBadge _badge() {
     switch (recommendation.level) {
@@ -22,14 +31,7 @@ class RecommendationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
+    final inner = Row(
         children: [
           Container(
             width: 4,
@@ -76,6 +78,17 @@ class RecommendationTile extends StatelessWidget {
                     _badge(),
                   ],
                 ),
+                if (cropLabel != null && cropLabel!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    cropLabel!,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   recommendation.body,
@@ -85,10 +98,55 @@ class RecommendationTile extends StatelessWidget {
                     height: 1.3,
                   ),
                 ),
+                if (onOpenCrop != null &&
+                    recommendation.cropId != null &&
+                    recommendation.cropId!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: onOpenCrop,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Ver cultivo'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
+      );
+
+    if (onTap == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: inner,
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: inner,
+        ),
       ),
     );
   }

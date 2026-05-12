@@ -1,42 +1,70 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
-enum CropStatus { active, monitoring, harvested }
-
-extension CropStatusX on CropStatus {
-  String get label => switch (this) {
-        CropStatus.active => 'Activo',
-        CropStatus.monitoring => 'Seguimiento',
-        CropStatus.harvested => 'Cosechado',
-      };
-}
+import 'crop_type.dart';
+import 'municipality.dart';
+import 'sync_status.dart';
 
 @immutable
 class Crop {
   const Crop({
     required this.id,
-    required this.name,
-    required this.type,
-    required this.lot,
-    required this.stage,
-    required this.areaHa,
-    required this.plantedAt,
-    required this.status,
-    required this.iconCodePoint,
-    this.iconBackground = const Color(0xFFE8F5E9),
-    this.iconForeground = const Color(0xFF1F7A3A),
-    this.imageEmoji = '🌱',
+    required this.cropType,
+    required this.areaHectares,
+    required this.municipality,
+    required this.sownDate,
+    required this.syncStatus,
+    required this.createdAt,
   });
 
   final String id;
-  final String name;
-  final String type;
-  final String lot;
-  final String stage;
-  final double areaHa;
-  final DateTime plantedAt;
-  final CropStatus status;
-  final int iconCodePoint;
-  final Color iconBackground;
-  final Color iconForeground;
-  final String imageEmoji;
+  final CropType cropType;
+  final double areaHectares;
+  final Municipality municipality;
+  final DateTime sownDate;
+  final SyncStatus syncStatus;
+  final DateTime createdAt;
+
+  factory Crop.fromJson(Map<String, dynamic> json) {
+    return Crop(
+      id: json['id'] as String,
+      cropType: CropType.fromJson(json['cropType'] as String),
+      areaHectares: (json['areaHectares'] as num).toDouble(),
+      municipality: Municipality.fromJson(json['municipality'] as String),
+      sownDate: DateTime.parse(json['sownDate'] as String),
+      syncStatus: SyncStatus.SYNCED,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
+
+  /// Serialización para el body de POST /api/sync/batch.
+  Map<String, dynamic> toSyncJson() {
+    final d = sownDate;
+    final dateStr =
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    return {
+      'id': id,
+      'cropType': cropType.name,
+      'areaHectares': areaHectares,
+      'municipality': municipality.name,
+      'sownDate': dateStr,
+    };
+  }
+
+  Crop copyWith({
+    CropType? cropType,
+    double? areaHectares,
+    Municipality? municipality,
+    DateTime? sownDate,
+    SyncStatus? syncStatus,
+  }) {
+    return Crop(
+      id: id,
+      cropType: cropType ?? this.cropType,
+      areaHectares: areaHectares ?? this.areaHectares,
+      municipality: municipality ?? this.municipality,
+      sownDate: sownDate ?? this.sownDate,
+      syncStatus: syncStatus ?? this.syncStatus,
+      createdAt: createdAt,
+    );
+  }
 }

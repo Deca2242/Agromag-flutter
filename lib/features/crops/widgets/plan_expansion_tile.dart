@@ -9,6 +9,7 @@ class PlanExpansionTile extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.iconBackground,
+    this.subtitle,
     this.children = const [],
   });
 
@@ -16,6 +17,7 @@ class PlanExpansionTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final Color iconBackground;
+  final String? subtitle;
   final List<Widget> children;
 
   @override
@@ -45,9 +47,26 @@ class PlanExpansionTile extends StatelessWidget {
             alignment: Alignment.center,
             child: Icon(icon, color: iconColor, size: 18),
           ),
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
           ),
           children: children.isEmpty
               ? const [

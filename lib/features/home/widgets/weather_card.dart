@@ -9,12 +9,18 @@ class WeatherCard extends StatelessWidget {
     required this.source,
     required this.temperature,
     required this.humidity,
+    this.onRetry,
+    this.fetchedAt,
   });
 
   final String location;
   final String source;
   final String temperature;
   final String humidity;
+  /// Si se provee, se muestra un ícono de reintento cuando hay error.
+  final VoidCallback? onRetry;
+  /// Cuándo se obtuvo el dato; si tiene más de 15 min se muestra aviso.
+  final DateTime? fetchedAt;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +66,18 @@ class WeatherCard extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
+                    if (fetchedAt != null &&
+                        DateTime.now().difference(fetchedAt!) >
+                            const Duration(minutes: 15)) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Actualizado hace ${_minutesAgo(fetchedAt!)} min',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -92,15 +110,29 @@ class WeatherCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              const Icon(
-                Icons.wb_cloudy_outlined,
-                size: 56,
-                color: AppColors.textPrimary,
-              ),
+              if (onRetry != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.refresh,
+                    color: AppColors.textSecondary,
+                    size: 28,
+                  ),
+                  onPressed: onRetry,
+                  tooltip: 'Reintentar',
+                )
+              else
+                const Icon(
+                  Icons.wb_cloudy_outlined,
+                  size: 56,
+                  color: AppColors.textPrimary,
+                ),
             ],
           ),
         ],
       ),
     );
   }
+
+  static int _minutesAgo(DateTime t) =>
+      DateTime.now().difference(t).inMinutes;
 }

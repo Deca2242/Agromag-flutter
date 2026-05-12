@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_exceptions.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/profile_repository.dart';
+import '../../../data/services/local_db.dart';
 import '../../../data/services/profile_api.dart';
 import '../../../data/services/profile_local_dao.dart';
 import '../../../domain/models/app_role.dart';
@@ -91,7 +92,6 @@ class AuthController extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   AuthRepository get _auth => ref.read(authRepositoryProvider);
-  ProfileRepository get _profile => ref.read(profileRepositoryProvider);
 
   Future<void> signIn({
     required String email,
@@ -124,7 +124,8 @@ class AuthController extends AsyncNotifier<void> {
 
   Future<void> signOut() async {
     state = const AsyncLoading();
-    await _profile.clearLocalProfile();
+    // Limpiar todos los datos locales del usuario (crops, weather, events, profile).
+    await LocalDb.instance.clearUserData();
     await _auth.signOut();
     state = const AsyncData(null);
   }
@@ -138,6 +139,11 @@ class AuthController extends AsyncNotifier<void> {
   String? get errorMessage {
     final err = state.error;
     if (err == null) return null;
+    if (err is NetworkException) {
+      return 'Sin conexión. Para entrar con correo y contraseña necesitas '
+          'internet al menos una vez. Si ya entraste antes, cierra y abre la '
+          'app: la sesión guardada puede aparecer tras unos segundos.';
+    }
     if (err is AuthException) return _mapAuthError(err.message);
     if (err is ApiException) return err.message;
     return 'Error inesperado. Intenta de nuevo.';

@@ -2,10 +2,31 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 
-class ChatInput extends StatelessWidget {
-  const ChatInput({super.key, this.onSend});
+class ChatInput extends StatefulWidget {
+  const ChatInput({super.key, this.onSend, this.enabled = true});
 
   final ValueChanged<String>? onSend;
+  final bool enabled;
+
+  @override
+  State<ChatInput> createState() => _ChatInputState();
+}
+
+class _ChatInputState extends State<ChatInput> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleSend() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    widget.onSend?.call(text);
+    _controller.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,36 +40,26 @@ class ChatInput extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
-              ),
-              child: IconButton(
-                onPressed: () {},
-                tooltip: 'Adjuntar contenido',
-                icon: const Icon(
-                  Icons.add,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: widget.enabled
+                      ? AppColors.surface
+                      : AppColors.divider,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: AppColors.border),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: const TextField(
+                child: TextField(
+                  controller: _controller,
+                  enabled: widget.enabled,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: widget.enabled ? (_) => _handleSend() : null,
                   decoration: InputDecoration(
-                    hintText: 'Escribe tu consulta aquí...',
+                    hintText: widget.enabled
+                        ? 'Escribe tu consulta aquí...'
+                        : 'Asistente no disponible sin conexión',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -61,16 +72,18 @@ class ChatInput extends StatelessWidget {
             Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryGreen,
+              decoration: BoxDecoration(
+                color: widget.enabled
+                    ? AppColors.primaryGreen
+                    : AppColors.divider,
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                onPressed: () => onSend?.call(''),
+                onPressed: widget.enabled ? _handleSend : null,
                 tooltip: 'Enviar mensaje',
-                icon: const Icon(
+                icon: Icon(
                   Icons.send,
-                  color: Colors.white,
+                  color: widget.enabled ? Colors.white : AppColors.textMuted,
                   size: 18,
                 ),
               ),

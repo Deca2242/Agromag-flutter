@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/network/api_exceptions.dart';
 import '../../domain/models/municipality.dart';
 import '../../domain/models/profile.dart';
 import '../services/profile_api.dart';
@@ -30,8 +31,7 @@ class ProfileRepository {
     Profile profile = remote;
 
     if (remote.fullName.isEmpty) {
-      final metadata =
-          _supabase.auth.currentUser?.userMetadata ?? {};
+      final metadata = _supabase.auth.currentUser?.userMetadata ?? {};
       final fullName = metadata['full_name'] as String?;
       final municipalityStr = metadata['municipality'] as String?;
 
@@ -46,8 +46,6 @@ class ProfileRepository {
             municipality: municipality,
           );
         } catch (_) {
-          // Si el PUT falla (offline), usamos el remote con fullName vacío
-          // por ahora; el usuario podrá editar después.
           profile = remote;
         }
       }
@@ -57,24 +55,58 @@ class ProfileRepository {
     return profile;
   }
 
-  /// Retorna el perfil del caché SQLite (para arranque offline o pantalla
-  /// de inicio mientras se espera la red).
+  /// Retorna el perfil del caché SQLite.
   Future<Profile?> getCachedProfile({String? userId}) async {
     if (userId != null) return _dao.find(userId);
     return _dao.findAny();
   }
 
-  /// Actualiza el perfil en el backend y reflesce el cambio en SQLite.
+  /// Actualiza el perfil offline-first:
+  /// - Si hay red → PUT /api/profile y persiste resultado.
+  /// - Si no hay red → guarda localmente con pending_update=true.
   Future<Profile> updateProfile({
     required String fullName,
     required Municipality municipality,
   }) async {
-    final updated = await _api.updateProfile(
-      fullName: fullName,
-      municipality: municipality,
-    );
-    await _dao.upsert(updated);
-    return updated;
+    final current = await _dao.findAny();
+    final optimistic =
+        current?.copyWith(fullName: fullName, municipality: municipality) ??
+            Profile(
+              id: '',
+              email: '',
+              role: current?.role ?? (throw StateError('No profile in cache')),
+              fullName: fullName,
+              municipality: municipality,
+              createdAt: DateTime.now(),
+            );
+
+    try {
+      final updated = await _api.updateProfile(
+        fullName: fullName,
+        municipality: municipality,
+      );
+      await _dao.upsert(updated);
+      return updated;
+    } on NetworkException {
+      await _dao.upsert(optimistic, pendingUpdate: true);
+      return optimistic;
+    }
+  }
+
+  /// Sube al backend cualquier actualización de perfil guardada mientras
+  /// estaba sin conexión. Se llama al detectar reconexión.
+  Future<void> syncPendingProfile() async {
+    final pending = await _dao.findPendingUpdate();
+    if (pending == null) return;
+    try {
+      final updated = await _api.updateProfile(
+        fullName: pending.fullName,
+        municipality: pending.municipality,
+      );
+      await _dao.upsert(updated);
+    } catch (_) {
+      // Reintento en próxima reconexión.
+    }
   }
 
   /// Limpia el caché de perfil al cerrar sesión.

@@ -67,13 +67,22 @@ class ChatBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    message.text,
-                    style: TextStyle(
-                      color: textColor,
-                      height: 1.35,
+                  if (message.isLoading)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Text(
+                      message.text,
+                      style: TextStyle(
+                        color: message.isError
+                            ? AppColors.alertRed
+                            : textColor,
+                        height: 1.35,
+                      ),
                     ),
-                  ),
                   if (message.attachmentTitle != null) ...[
                     const SizedBox(height: 12),
                     ForecastAttachmentCard(
