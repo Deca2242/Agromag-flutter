@@ -15,7 +15,8 @@ class CropsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final crops = ref.watch(cropsProvider);
+    final cropsAsync = ref.watch(cropsProvider);
+    final crops = cropsAsync.value ?? [];
     final online = ref.watch(isOnlineProvider).value ?? true;
 
     return Scaffold(

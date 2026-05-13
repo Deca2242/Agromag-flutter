@@ -5,6 +5,8 @@ import 'package:sqflite/sqflite.dart';
 ///
 /// Versiones y migraciones:
 ///   v1 — tablas `profile` y `auth_state`.
+///   v2 — tabla `crops`.
+///   v3 — columnas `variety` y `planting_density` en `crops`.
 class LocalDb {
   LocalDb._();
 
@@ -24,7 +26,7 @@ class LocalDb {
 
     _db = await openDatabase(
       fullPath,
-      version: 1,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -56,6 +58,29 @@ class LocalDb {
         last_sync_at TEXT
       )
     ''');
+
+    await _createCropsTable(db);
+  }
+
+  static Future<void> _createCropsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE crops (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        variety TEXT NOT NULL,
+        lot TEXT NOT NULL,
+        stage TEXT NOT NULL,
+        area_ha REAL NOT NULL,
+        planting_density REAL NOT NULL,
+        planted_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        icon_code_point INTEGER NOT NULL,
+        icon_background INTEGER NOT NULL,
+        icon_foreground INTEGER NOT NULL,
+        image_emoji TEXT NOT NULL
+      )
+    ''');
   }
 
   static Future<void> _onUpgrade(
@@ -63,6 +88,12 @@ class LocalDb {
     int oldVersion,
     int newVersion,
   ) async {
-    // Migraciones futuras van aquí con bloques if (oldVersion < X).
+    if (oldVersion < 2) {
+      await _createCropsTable(db);
+    }
+    if (oldVersion < 3 && oldVersion >= 2) {
+      await db.execute('ALTER TABLE crops ADD COLUMN variety TEXT NOT NULL DEFAULT ""');
+      await db.execute('ALTER TABLE crops ADD COLUMN planting_density REAL NOT NULL DEFAULT 0.0');
+    }
   }
 }

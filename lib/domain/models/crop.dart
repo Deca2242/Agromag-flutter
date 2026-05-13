@@ -19,6 +19,7 @@ class Crop {
     required this.lot,
     required this.stage,
     required this.areaHa,
+    required this.plantingDensity,
     required this.plantedAt,
     required this.status,
     required this.iconCodePoint,
@@ -33,6 +34,7 @@ class Crop {
   final String lot;
   final String stage;
   final double areaHa;
+  final double plantingDensity;
   final DateTime plantedAt;
   final CropStatus status;
   final int iconCodePoint;
