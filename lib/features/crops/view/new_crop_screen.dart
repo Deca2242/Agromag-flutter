@@ -1,25 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/agronomic_data.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/brand_logo.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/section_card.dart';
-import '../../../data/mock/mock_crops.dart';
+import '../../../data/mock/mock_crops.dart'; // keeping it just in case, but probably not needed for crops anymore
+import '../../../domain/models/crop.dart';
+import '../crops_providers.dart';
+import 'package:geolocator/geolocator.dart';
 
-class NewCropScreen extends StatefulWidget {
+class NewCropScreen extends ConsumerStatefulWidget {
   const NewCropScreen({super.key});
 
   @override
-  State<NewCropScreen> createState() => _NewCropScreenState();
+  ConsumerState<NewCropScreen> createState() => _NewCropScreenState();
 }
 
-class _NewCropScreenState extends State<NewCropScreen> {
+class _NewCropScreenState extends ConsumerState<NewCropScreen> {
+  final _nameController = TextEditingController();
+  final _areaController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _densityController = TextEditingController();
+
   String? _cropType;
   String? _soilType;
   String? _irrigationSystem;
   DateTime? _plantedAt;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _areaController.dispose();
+    _locationController.dispose();
+    _densityController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,11 +94,15 @@ class _NewCropScreenState extends State<NewCropScreen> {
               const SizedBox(height: 20),
               _IdentificationCard(
                 cropType: _cropType,
+                nameController: _nameController,
                 onCropTypeChanged: (v) => setState(() => _cropType = v),
               ),
               const SizedBox(height: 16),
               _TerrainCard(
                 soilType: _soilType,
+                areaController: _areaController,
+                densityController: _densityController,
+                locationController: _locationController,
                 onSoilTypeChanged: (v) => setState(() => _soilType = v),
               ),
               const SizedBox(height: 16),
@@ -94,7 +117,33 @@ class _NewCropScreenState extends State<NewCropScreen> {
               PrimaryButton(
                 label: 'Guardar cultivo',
                 icon: Icons.save_outlined,
-                onPressed: () => context.pop(),
+                onPressed: () {
+                  if (_cropType == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Por favor selecciona un tipo de cultivo')),
+                    );
+                    return;
+                  }
+                  
+                  final newCrop = Crop(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    name: _nameController.text.isNotEmpty ? _nameController.text : 'Lote ${_cropType}',
+                    type: _cropType!,
+                    lot: _locationController.text.isNotEmpty ? _locationController.text : 'Principal',
+                    stage: 'Siembra',
+                    areaHa: double.tryParse(_areaController.text) ?? 1.0,
+                    plantingDensity: double.tryParse(_densityController.text) ?? 0.0,
+                    plantedAt: _plantedAt ?? DateTime.now(),
+                    status: CropStatus.active,
+                    iconCodePoint: Icons.eco.codePoint,
+                    iconBackground: const Color(0xFFE8F5E9),
+                    iconForeground: const Color(0xFF1F7A3A),
+                    imageEmoji: '🌱',
+                  );
+
+                  ref.read(cropsProvider.notifier).addCrop(newCrop);
+                  context.pop();
+                },
               ),
               const SizedBox(height: 12),
               Container(
@@ -134,10 +183,12 @@ class _NewCropScreenState extends State<NewCropScreen> {
 class _IdentificationCard extends StatelessWidget {
   const _IdentificationCard({
     required this.cropType,
+    required this.nameController,
     required this.onCropTypeChanged,
   });
 
   final String? cropType;
+  final TextEditingController nameController;
   final ValueChanged<String?> onCropTypeChanged;
 
   @override
@@ -150,19 +201,27 @@ class _IdentificationCard extends StatelessWidget {
           const SizedBox(height: 14),
           const _Label('Nombre personalizado'),
           const SizedBox(height: 6),
-          const TextField(
-            decoration: InputDecoration(hintText: 'Ej: Lote San Juan'),
+          TextField(
+            controller: nameController,
+            decoration: const InputDecoration(hintText: 'Ej: Lote San Juan'),
           ),
           const SizedBox(height: 14),
           const _Label('Tipo de cultivo'),
           const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            initialValue: cropType,
-            decoration: const InputDecoration(hintText: 'Selecciona un tipo'),
-            items: kCropTypes
-                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                .toList(),
-            onChanged: onCropTypeChanged,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return DropdownMenu<String>(
+                initialSelection: cropType,
+                hintText: 'Selecciona o busca un tipo',
+                width: constraints.maxWidth,
+                menuHeight: 250,
+                requestFocusOnTap: true,
+                dropdownMenuEntries: kComprehensiveCropTypes
+                    .map((t) => DropdownMenuEntry(value: t, label: t))
+                    .toList(),
+                onSelected: onCropTypeChanged,
+              );
+            },
           ),
         ],
       ),
@@ -173,10 +232,16 @@ class _IdentificationCard extends StatelessWidget {
 class _TerrainCard extends StatelessWidget {
   const _TerrainCard({
     required this.soilType,
+    required this.areaController,
+    required this.densityController,
+    required this.locationController,
     required this.onSoilTypeChanged,
   });
 
   final String? soilType;
+  final TextEditingController areaController;
+  final TextEditingController densityController;
+  final TextEditingController locationController;
   final ValueChanged<String?> onSoilTypeChanged;
 
   @override
@@ -189,21 +254,42 @@ class _TerrainCard extends StatelessWidget {
           const SizedBox(height: 14),
           const _Label('Área (Hectáreas)'),
           const SizedBox(height: 6),
-          const TextField(
+          TextField(
+            controller: areaController,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(hintText: '0.0'),
+            decoration: const InputDecoration(hintText: '0.0'),
           ),
-          const SizedBox(height: 14),
-          const _Label('Ubicación'),
+          const _Label('Densidad de siembra (Plantas/Ha)'),
           const SizedBox(height: 6),
           TextField(
+            controller: densityController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(hintText: 'Ej: 10000'),
+          ),
+          const SizedBox(height: 14),
+          const _Label('Ubicación (Coordenadas o Vereda)'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: locationController,
             decoration: InputDecoration(
-              hintText: 'Sector o Vereda',
+              hintText: 'Sector, Vereda o GPS',
               suffixIcon: Semantics(
                 label: 'Detectar ubicación con GPS',
                 button: true,
                 child: IconButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+                    if (!serviceEnabled) return;
+                    LocationPermission permission = await Geolocator.checkPermission();
+                    if (permission == LocationPermission.denied) {
+                      permission = await Geolocator.requestPermission();
+                      if (permission == LocationPermission.denied) return;
+                    }
+                    if (permission == LocationPermission.deniedForever) return;
+                    
+                    final position = await Geolocator.getCurrentPosition();
+                    locationController.text = '${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}';
+                  },
                   icon: const Icon(
                     Icons.gps_fixed,
                     color: AppColors.primaryGreen,
@@ -216,9 +302,9 @@ class _TerrainCard extends StatelessWidget {
           const _Label('Tipo de suelo'),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            initialValue: soilType,
+            value: soilType,
             decoration: const InputDecoration(hintText: 'Selecciona un tipo'),
-            items: kSoilTypes
+            items: kUSDA_SoilTypes
                 .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                 .toList(),
             onChanged: onSoilTypeChanged,
