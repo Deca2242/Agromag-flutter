@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'core/config/env.dart';
@@ -9,6 +10,9 @@ import 'data/services/local_db.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa el soporte para fechas en español
+  await initializeDateFormatting('es', null);
 
   // 1. Carga las variables de entorno desde assets/.env
   await dotenv.load();

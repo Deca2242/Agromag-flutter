@@ -41,30 +41,34 @@ class _CropTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 96,
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: crop.iconBackground,
-              shape: BoxShape.circle,
+      child: InkWell(
+        onTap: () => context.pushNamed(AppRoutes.cropsDetailName, pathParameters: {'id': crop.id}),
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: crop.iconBackground,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                IconData(crop.iconCodePoint, fontFamily: 'MaterialIcons'),
+                color: crop.iconForeground,
+              ),
             ),
-            alignment: Alignment.center,
-            child: Icon(
-              IconData(crop.iconCodePoint, fontFamily: 'MaterialIcons'),
-              color: crop.iconForeground,
+            const SizedBox(height: 8),
+            Text(
+              crop.type,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            crop.type,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

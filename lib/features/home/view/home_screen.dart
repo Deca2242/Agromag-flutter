@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/branded_app_bar.dart';
+import '../../../domain/models/alert.dart';
+import '../../alerts/alerts_providers.dart';
 import '../../crops/crops_providers.dart';
 import '../home_providers.dart';
 import '../widgets/crops_chips_row.dart';
 import '../widgets/recommendation_tile.dart';
 import '../widgets/weather_card.dart';
+import 'weather_details_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -21,7 +26,8 @@ class HomeScreen extends ConsumerWidget {
       AsyncData(:final value) when value != null => value,
       _ => fallback,
     };
-    final crops = ref.watch(cropsProvider);
+    final cropsAsync = ref.watch(cropsProvider);
+    final crops = cropsAsync.value ?? [];
     final recs = ref.watch(recommendationsProvider);
     final online = ref.watch(isOnlineProvider).value ?? true;
 
@@ -92,11 +98,19 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const WeatherCard(
+              WeatherCard(
                 location: 'Magdalena',
                 source: 'Datos de Open-Meteo',
                 temperature: '28°C',
                 humidity: '75%',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const WeatherDetailsScreen(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
               Text(
@@ -118,7 +132,27 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               for (final r in recs) ...[
-                RecommendationTile(recommendation: r),
+                RecommendationTile(
+                  recommendation: r,
+                  onTap: () {
+                    AlertCategory? category;
+                    final titleLower = r.title.toLowerCase();
+                    if (titleLower.contains('riego') || titleLower.contains('hídric')) {
+                      category = AlertCategory.irrigation;
+                    } else if (titleLower.contains('fertiliza') || titleLower.contains('nutri')) {
+                      category = AlertCategory.fertilization;
+                    } else if (titleLower.contains('fito') || titleLower.contains('plaga') || titleLower.contains('enfermedad')) {
+                      category = AlertCategory.phytosanitary;
+                    } else if (titleLower.contains('clima') || titleLower.contains('tempe')) {
+                      category = AlertCategory.climate;
+                    }
+
+                    if (category != null) {
+                      ref.read(alertsFilterProvider.notifier).state = category;
+                    }
+                    context.goNamed(AppRoutes.alertsName);
+                  },
+                ),
                 const SizedBox(height: 12),
               ],
             ],
