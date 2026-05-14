@@ -10,6 +10,8 @@ import 'package:sqflite/sqflite.dart';
 ///         tablas `weather_cache` y `crop_events`.
 ///   v4 — columna opcional `forecast_json` en `weather_cache` (pronóstico JSON;
 ///         alinea BD si antes hubo una build con user_version 4).
+///   v5 — tabla `pending_decisions` para decisiones de recomendaciones offline.
+///   v6 — columna `pending_delete` en `crop_events` para eliminación offline.
 class LocalDb {
   LocalDb._();
 
@@ -29,7 +31,7 @@ class LocalDb {
 
     _db = await openDatabase(
       fullPath,
-      version: 4,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -66,6 +68,7 @@ class LocalDb {
     await _createCropsTable(db);
     await _createWeatherCacheTable(db);
     await _createCropEventsTable(db);
+    await _createPendingDecisionsTable(db);
   }
 
   static Future<void> _createCropsTable(Database db) async {
@@ -109,10 +112,28 @@ class LocalDb {
         notes TEXT,
         event_date TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        synced INTEGER NOT NULL DEFAULT 0
+        synced INTEGER NOT NULL DEFAULT 0,
+        pending_delete INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute('CREATE INDEX idx_events_crop ON crop_events(crop_id)');
+    await db.execute(
+      'CREATE INDEX idx_events_pending_delete ON crop_events(pending_delete)',
+    );
+  }
+
+  static Future<void> _createPendingDecisionsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE pending_decisions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        recommendation_id TEXT NOT NULL,
+        followed INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_pending_decisions_rec ON pending_decisions(recommendation_id)',
+    );
   }
 
   static Future<void> _onUpgrade(
@@ -154,6 +175,21 @@ class LocalDb {
         );
       } catch (_) {}
     }
+    if (oldVersion < 5) {
+      await _createPendingDecisionsTable(db);
+    }
+    if (oldVersion < 6) {
+      try {
+        await db.execute(
+          'ALTER TABLE crop_events ADD COLUMN pending_delete INTEGER NOT NULL DEFAULT 0',
+        );
+      } catch (_) {}
+      try {
+        await db.execute(
+          'CREATE INDEX idx_events_pending_delete ON crop_events(pending_delete)',
+        );
+      } catch (_) {}
+    }
   }
 
   /// Borra todos los datos del usuario para logout limpio.
@@ -165,5 +201,6 @@ class LocalDb {
     await db.delete('weather_cache');
     await db.delete('crop_events');
     await db.delete('auth_state');
+    await db.delete('pending_decisions');
   }
 }

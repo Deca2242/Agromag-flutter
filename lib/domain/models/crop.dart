@@ -14,6 +14,7 @@ class Crop {
     required this.sownDate,
     required this.syncStatus,
     required this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -23,6 +24,7 @@ class Crop {
   final DateTime sownDate;
   final SyncStatus syncStatus;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   factory Crop.fromJson(Map<String, dynamic> json) {
     return Crop(
@@ -33,6 +35,9 @@ class Crop {
       sownDate: DateTime.parse(json['sownDate'] as String),
       syncStatus: SyncStatus.SYNCED,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -56,6 +61,7 @@ class Crop {
     Municipality? municipality,
     DateTime? sownDate,
     SyncStatus? syncStatus,
+    DateTime? updatedAt,
   }) {
     return Crop(
       id: id,
@@ -65,6 +71,13 @@ class Crop {
       sownDate: sownDate ?? this.sownDate,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  bool isLocalNewerThan(DateTime? serverUpdatedAt) {
+    if (serverUpdatedAt == null) return true;
+    final localUpdated = updatedAt ?? createdAt;
+    return localUpdated.isAfter(serverUpdatedAt);
   }
 }

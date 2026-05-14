@@ -141,11 +141,21 @@ class CropsRepository {
     if (newCrops.isNotEmpty) {
       try {
         final result = await _syncApi.postBatch(crops: newCrops);
-        final syncedIds = result.syncedCropIds;
-        final allIds = newCrops.map((c) => c.id).toList();
-        final toMark = {...syncedIds, ...allIds}.toList();
-        await _dao.markSynced(toMark);
-        synced += toMark.length;
+        final confirmedIds = result.syncedCropIds;
+        if (confirmedIds.isNotEmpty) {
+          await _dao.markSynced(confirmedIds);
+          synced += confirmedIds.length;
+        }
+        final serverFailedIds = result.failedCropIds;
+        final unconfirmed = newCrops
+            .where((c) => !confirmedIds.contains(c.id))
+            .map((c) => c.id)
+            .toList();
+        final toMarkError = {...unconfirmed, ...serverFailedIds}.toList();
+        if (toMarkError.isNotEmpty) {
+          await _dao.markError(toMarkError);
+          failed += toMarkError.length;
+        }
       } catch (_) {
         await _dao.markError(newCrops.map((c) => c.id).toList());
         failed += newCrops.length;
@@ -157,6 +167,7 @@ class CropsRepository {
       await _dao.editedPendingByProfile(profileId),
       await _dao.editedErrorByProfile(profileId),
     );
+    final editedFailedIds = <String>[];
     for (final crop in edited) {
       try {
         final serverCrop = await _api.update(crop);
@@ -164,7 +175,11 @@ class CropsRepository {
         synced++;
       } catch (_) {
         failed++;
+        editedFailedIds.add(crop.id);
       }
+    }
+    if (editedFailedIds.isNotEmpty) {
+      await _dao.markError(editedFailedIds);
     }
 
     // 3. Pending deletes → DELETE individual

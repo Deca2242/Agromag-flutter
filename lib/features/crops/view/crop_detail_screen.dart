@@ -33,18 +33,6 @@ Future<void> _openRecommendationDecision(
   required String cropId,
   required bool online,
 }) async {
-  if (!online) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Necesitas conexión para registrar la decisión.',
-        ),
-        backgroundColor: AppColors.alertRed,
-      ),
-    );
-    return;
-  }
-
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -72,7 +60,9 @@ Future<void> _openRecommendationDecision(
               onPressed: () async {
                 Navigator.of(ctx).pop();
                 try {
-                  await ref.read(recommendationsApiProvider).submitDecision(
+                  await ref
+                      .read(recommendationsRepositoryProvider)
+                      .submitDecision(
                         recommendationId: recommendation.id,
                         followed: true,
                       );
@@ -81,6 +71,7 @@ Future<void> _openRecommendationDecision(
                   ref
                       .read(recommendationHistoryTickProvider(cropId).notifier)
                       .state++;
+                  ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
                 } catch (_) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -92,14 +83,18 @@ Future<void> _openRecommendationDecision(
                   }
                 }
               },
-              child: const Text('Realizado'),
+              child: Text(
+                online ? 'Realizado' : 'Realizado (offline)',
+              ),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: () async {
                 Navigator.of(ctx).pop();
                 try {
-                  await ref.read(recommendationsApiProvider).submitDecision(
+                  await ref
+                      .read(recommendationsRepositoryProvider)
+                      .submitDecision(
                         recommendationId: recommendation.id,
                         followed: false,
                       );
@@ -108,6 +103,7 @@ Future<void> _openRecommendationDecision(
                   ref
                       .read(recommendationHistoryTickProvider(cropId).notifier)
                       .state++;
+                  ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
                 } catch (_) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -119,7 +115,9 @@ Future<void> _openRecommendationDecision(
                   }
                 }
               },
-              child: const Text('Rechazado'),
+              child: Text(
+                online ? 'Rechazado' : 'Rechazado (offline)',
+              ),
             ),
           ],
         ),

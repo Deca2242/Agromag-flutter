@@ -35,4 +35,14 @@ class CropEventsApi {
       throw e.error ?? const ServerException();
     }
   }
+
+  Future<void> delete(String cropId, String eventId) async {
+    try {
+      await _dio.delete<void>(
+        '/api/crops/$cropId/events/$eventId',
+      );
+    } on DioException catch (e) {
+      throw e.error ?? const ServerException();
+    }
+  }
 }

@@ -42,6 +42,7 @@ class CropEvent {
     this.quantity,
     this.unit,
     this.synced = true,
+    this.pendingDelete = false,
   });
 
   final String id;
@@ -52,6 +53,7 @@ class CropEvent {
   final double? quantity;
   final String? unit;
   final bool synced;
+  final bool pendingDelete;
 
   factory CropEvent.fromJson(Map<String, dynamic> json) {
     return CropEvent(
@@ -65,6 +67,7 @@ class CropEvent {
           : null,
       unit: json['unit'] as String?,
       synced: true,
+      pendingDelete: false,
     );
   }
 
@@ -79,5 +82,29 @@ class CropEvent {
       'occurredAt':
           occurredAt.toIso8601String().replaceFirst(RegExp(r'\..*'), ''),
     };
+  }
+
+  CropEvent copyWith({
+    String? id,
+    String? cropId,
+    EventType? eventType,
+    DateTime? occurredAt,
+    String? notes,
+    double? quantity,
+    String? unit,
+    bool? synced,
+    bool? pendingDelete,
+  }) {
+    return CropEvent(
+      id: id ?? this.id,
+      cropId: cropId ?? this.cropId,
+      eventType: eventType ?? this.eventType,
+      occurredAt: occurredAt ?? this.occurredAt,
+      notes: notes ?? this.notes,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      synced: synced ?? this.synced,
+      pendingDelete: pendingDelete ?? this.pendingDelete,
+    );
   }
 }

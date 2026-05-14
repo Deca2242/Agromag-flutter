@@ -172,6 +172,20 @@ class CropsLocalDao {
       );
     }
     await batch.commit(noResult: true);
+
+    final serverIds = crops.map((c) => c.id).toSet();
+    final localCrops = await listByProfile(profileId);
+    final orphaned = localCrops
+        .where((c) => !serverIds.contains(c.id))
+        .map((c) => c.id)
+        .toList();
+    if (orphaned.isNotEmpty) {
+      final placeholders = orphaned.map((_) => '?').join(', ');
+      await db.rawUpdate(
+        'UPDATE $_table SET pending_delete = 1, sync_status = ? WHERE id IN ($placeholders) AND is_new_local = 0 AND pending_delete = 0',
+        [SyncStatus.SYNCED.name, ...orphaned],
+      );
+    }
   }
 
   /// Updates an existing crop row keeping is_new_local as-is.
@@ -185,7 +199,7 @@ class CropsLocalDao {
         'municipality': crop.municipality.name,
         'sown_date': _dateStr(crop.sownDate),
         'sync_status': crop.syncStatus.name,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': crop.updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
         'pending_delete': 0,
       },
       where: 'id = ?',
@@ -208,7 +222,7 @@ class CropsLocalDao {
       'sown_date': _dateStr(crop.sownDate),
       'sync_status': crop.syncStatus.name,
       'created_at': crop.createdAt.toIso8601String(),
-      'updated_at': now,
+      'updated_at': crop.updatedAt?.toIso8601String() ?? now,
       'pending_delete': 0,
       'is_new_local': isNewLocal ? 1 : 0,
     };
@@ -223,6 +237,9 @@ class CropsLocalDao {
       sownDate: DateTime.parse(row['sown_date'] as String),
       syncStatus: SyncStatus.fromString(row['sync_status'] as String),
       createdAt: DateTime.parse(row['created_at'] as String),
+      updatedAt: row['updated_at'] != null
+          ? DateTime.tryParse(row['updated_at'] as String)
+          : null,
     );
   }
 

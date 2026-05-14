@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/network/api_client.dart';
 import '../../core/network/api_exceptions.dart';
 import '../../data/repositories/crops_repository.dart';
+import '../../data/repositories/recommendations_repository.dart';
 import '../auth/providers/auth_providers.dart';
 import '../crops/crops_providers.dart';
 import '../home/home_providers.dart';
@@ -16,6 +19,8 @@ class ManualSyncResult {
     required this.profilePushOk,
     required this.cropsReport,
     required this.eventsPushOk,
+    required this.eventsDeletesOk,
+    required this.decisionsPushOk,
     required this.pullCropsOk,
     required this.pullProfileOk,
     required this.pullEventsOk,
@@ -24,6 +29,8 @@ class ManualSyncResult {
   final bool profilePushOk;
   final SyncReport cropsReport;
   final bool eventsPushOk;
+  final bool eventsDeletesOk;
+  final bool decisionsPushOk;
   final bool pullCropsOk;
   final bool pullProfileOk;
   final bool pullEventsOk;
@@ -31,6 +38,8 @@ class ManualSyncResult {
   bool get isFullSuccess =>
       profilePushOk &&
       eventsPushOk &&
+      eventsDeletesOk &&
+      decisionsPushOk &&
       cropsReport.failed == 0 &&
       pullCropsOk &&
       pullProfileOk &&
@@ -41,7 +50,7 @@ class ManualSyncResult {
       return 'No se pudo descargar todo desde el servidor. '
           'Revisa la conexión y API_BASE_URL.';
     }
-    if (!profilePushOk || !eventsPushOk || cropsReport.failed > 0) {
+    if (!profilePushOk || !eventsPushOk || !eventsDeletesOk || !decisionsPushOk || cropsReport.failed > 0) {
       final parts = <String>[];
       if (!profilePushOk) parts.add('perfil');
       if (cropsReport.failed > 0) {
@@ -50,6 +59,8 @@ class ManualSyncResult {
         );
       }
       if (!eventsPushOk) parts.add('eventos');
+      if (!eventsDeletesOk) parts.add('eliminaciones de eventos');
+      if (!decisionsPushOk) parts.add('decisiones');
       return 'Sincronización parcial: no se pudo subir ${parts.join(', ')}. '
           'Se reintentará al volver a sincronizar.';
     }
@@ -70,8 +81,20 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
   Future<void>? _gate;
   bool _pendingAgain = false;
   ManualSyncResult? _lastSyncResult;
+  int _consecutiveFailures = 0;
+  DateTime? _lastSyncTime;
 
-  /// Último resultado tras [requestSync] (p. ej. para SnackBar). Se consume una vez.
+  static const _maxBackoffMs = 30000;
+  static const _baseBackoffMs = 1000;
+  static const _networkStabilizeMs = 1500;
+
+  int get _backoffMs {
+    if (_consecutiveFailures == 0) return 0;
+    final exponential = _baseBackoffMs * (1 << (_consecutiveFailures - 1));
+    return exponential.clamp(0, _maxBackoffMs);
+  }
+
+  /// Ultimo resultado tras [requestSync] (p. ej. para SnackBar). Se consume una vez.
   ManualSyncResult? consumeLastSyncResult() {
     final r = _lastSyncResult;
     _lastSyncResult = null;
@@ -93,6 +116,12 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
     });
   }
 
+  /// Resetea el backoff exponencial (se llama al detectar reconexión).
+  void resetBackoff() {
+    _consecutiveFailures = 0;
+    _lastSyncTime = null;
+  }
+
   /// Encola una pasada de sincronización; varias llamadas concurrentes comparten
   /// la misma ejecución y, si llegan señales durante el sync, se hace un segundo pase.
   Future<void> requestSync() async {
@@ -107,11 +136,41 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
         _pendingAgain = false;
         _lastSyncResult = null;
         final session = ref.read(authSessionProvider).value;
-        if (session == null) continue;
-        if (ref.read(isOnlineProvider).value != true) continue;
+        if (session == null) {
+          await _waitForCondition(() => ref.read(authSessionProvider).value != null);
+          continue;
+        }
+        if (ref.read(isOnlineProvider).value != true) {
+          await _waitForCondition(() => ref.read(isOnlineProvider).value == true);
+          continue;
+        }
+
+        final backoff = _backoffMs;
+        final timeSinceLastSync = _lastSyncTime != null
+            ? DateTime.now().difference(_lastSyncTime!).inMilliseconds
+            : _maxBackoffMs + 1;
+        if (backoff > 0 && timeSinceLastSync < backoff) {
+          final waitMs = backoff - timeSinceLastSync;
+          await Future<void>.delayed(Duration(milliseconds: waitMs));
+        }
+
+        await Future<void>.delayed(const Duration(milliseconds: _networkStabilizeMs));
+
+        final isActuallyOnline = await _verifyConnectivity();
+        if (!isActuallyOnline) {
+          _consecutiveFailures++;
+          continue;
+        }
+
         state = true;
         try {
           _lastSyncResult = await _runFullSync(profileId: session.user.id);
+          if (_lastSyncResult!.isFullSuccess) {
+            _consecutiveFailures = 0;
+          } else {
+            _consecutiveFailures++;
+          }
+          _lastSyncTime = DateTime.now();
         } finally {
           state = false;
         }
@@ -122,15 +181,41 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
     }
   }
 
+  Future<void> _waitForCondition(bool Function() condition) async {
+    int attempts = 0;
+    while (!condition() && attempts < 20) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      attempts++;
+    }
+  }
+
+  Future<bool> _verifyConnectivity() async {
+    try {
+      await ApiClient.instance.dio.get(
+        '/api/profile',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 5),
+          sendTimeout: const Duration(seconds: 5),
+        ),
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<ManualSyncResult> _runFullSync({required String profileId}) async {
     final profileRepo = ref.read(profileRepositoryProvider);
     final cropsRepo = ref.read(cropsRepositoryProvider);
     final eventsRepo = ref.read(cropEventsRepositoryProvider);
+    final recommendationsRepo = ref.read(recommendationsRepositoryProvider);
 
-    // 1) Push: perfil pendiente → cultivos → eventos
+    // 1) Push: perfil pendiente → cultivos → eventos → eliminaciones de eventos → decisiones
     final profilePushOk = await profileRepo.syncPendingProfile();
     final cropsReport = await cropsRepo.syncPending(profileId: profileId);
     final eventsPushOk = await eventsRepo.syncPendingViaBatch();
+    final eventsDeletesOk = await eventsRepo.syncPendingDeletes();
+    final decisionsPushOk = await recommendationsRepo.syncPendingDecisions();
 
     // 2) Pull cultivos
     final pullCropsOk = await cropsRepo.pullCropsFromServer(profileId: profileId);
@@ -160,6 +245,8 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
       profilePushOk: profilePushOk,
       cropsReport: cropsReport,
       eventsPushOk: eventsPushOk,
+      eventsDeletesOk: eventsDeletesOk,
+      decisionsPushOk: decisionsPushOk,
       pullCropsOk: pullCropsOk,
       pullProfileOk: pullProfileOk,
       pullEventsOk: pullEventsOk,
@@ -169,17 +256,6 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
 
 /// Sincronización manual desde la AppBar: avisa si no hay red.
 Future<void> requestSyncFromAppBar(BuildContext context, WidgetRef ref) async {
-  if (ref.read(isOnlineProvider).value != true) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sin conexión. Conéctate para sincronizar.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-    return;
-  }
   await ref.read(syncCoordinatorProvider.notifier).requestSync();
   if (!context.mounted) return;
   final result = ref.read(syncCoordinatorProvider.notifier).consumeLastSyncResult();
@@ -202,6 +278,7 @@ final syncBootstrapProvider = Provider<void>((ref) {
     (previous, next) {
       final online = next.value;
       if (online == true && prevOnline != true) {
+        ref.read(syncCoordinatorProvider.notifier).resetBackoff();
         ref.read(syncCoordinatorProvider.notifier).requestSync();
       }
       if (online != null) prevOnline = online;
