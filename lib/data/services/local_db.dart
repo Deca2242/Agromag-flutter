@@ -8,7 +8,8 @@ import 'package:sqflite/sqflite.dart';
 ///   v2 — tabla `crops` con offline-first sync queue.
 ///   v3 — columnas pending_update/pending_delete/is_new_local,
 ///         tablas `weather_cache` y `crop_events`.
-///   v4 — columna `forecast_json` en `weather_cache`.
+///   v4 — columna opcional `forecast_json` en `weather_cache` (pronóstico JSON;
+///         alinea BD si antes hubo una build con user_version 4).
 class LocalDb {
   LocalDb._();
 

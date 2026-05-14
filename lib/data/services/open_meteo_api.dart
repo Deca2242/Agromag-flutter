@@ -47,16 +47,38 @@ class OpenMeteoApi {
           'forecast_days': 7,
         },
       );
-      final data = response.data!;
-      final current = data['current'] as Map<String, dynamic>;
-      final hourly = data['hourly'] as Map<String, dynamic>;
-      final daily = data['daily'] as Map<String, dynamic>;
+      final data = response.data;
+      if (data == null) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Open-Meteo: cuerpo vacío',
+        );
+      }
+      final currentRaw = data['current'];
+      if (currentRaw is! Map<String, dynamic>) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Open-Meteo: formato de current inesperado',
+        );
+      }
+      final current = currentRaw;
+      final temp = current['temperature_2m'];
+      final hum = current['relative_humidity_2m'];
+      if (temp is! num || hum is! num) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Open-Meteo: faltan temperature_2m o relative_humidity_2m',
+        );
+      }
 
       final code = (current['weather_code'] as num?)?.toInt() ?? 0;
       final now = DateTime.now();
       final currentWeather = CurrentWeather(
-        temperature: (current['temperature_2m'] as num).toDouble(),
-        humidity: (current['relative_humidity_2m'] as num).toDouble(),
+        temperature: temp.toDouble(),
+        humidity: hum.toDouble(),
         windSpeed: (current['wind_speed_10m'] as num?)?.toDouble() ?? 0,
         uvIndex: (current['uv_index'] as num?)?.toDouble() ?? 0,
         rain: (current['rain'] as num?)?.toDouble() ?? 0,
@@ -66,6 +88,15 @@ class OpenMeteoApi {
         source: 'Open-Meteo',
       );
 
+      final hourlyRaw = data['hourly'];
+      if (hourlyRaw is! Map<String, dynamic>) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Open-Meteo: formato de hourly inesperado',
+        );
+      }
+      final hourly = hourlyRaw;
       final hourlyList = <HourlyWeather>[];
       final times = hourly['time'] as List<dynamic>;
       int startIndex = 0;
@@ -87,6 +118,15 @@ class OpenMeteoApi {
         );
       }
 
+      final dailyRaw = data['daily'];
+      if (dailyRaw is! Map<String, dynamic>) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Open-Meteo: formato de daily inesperado',
+        );
+      }
+      final daily = dailyRaw;
       final dailyList = <DailyWeather>[];
       final dailyTimes = daily['time'] as List<dynamic>;
       for (var i = 0; i < dailyTimes.length; i++) {
