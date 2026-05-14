@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/brand_logo.dart';
@@ -880,9 +881,14 @@ class _ClimateCard extends StatelessWidget {
               if (weatherAsync.hasError)
                 IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.white),
-                  onPressed: () => ref.invalidate(
-                    currentWeatherProvider(crop.municipality),
-                  ),
+                  onPressed: () {
+                    ref.invalidate(
+                      currentWeatherProvider(crop.municipality),
+                    );
+                    ref.invalidate(
+                      weatherDataProvider(crop.municipality),
+                    );
+                  },
                 )
               else
                 const Icon(
@@ -897,6 +903,19 @@ class _ClimateCard extends StatelessWidget {
                   orElse: () => 'Humedad: --%',
                 ),
                 style: const TextStyle(color: Colors.white),
+              ),
+              TextButton(
+                onPressed: () => context.pushNamed(
+                  AppRoutes.homeWeatherName,
+                  extra: crop.municipality,
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Ver detalle del clima'),
               ),
             ],
           ),

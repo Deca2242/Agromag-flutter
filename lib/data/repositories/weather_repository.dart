@@ -20,27 +20,32 @@ class WeatherRepository {
 
   static const _cacheTtl = Duration(minutes: 10);
 
-  final Map<Municipality, CurrentWeather> _memCache = {};
+  final Map<Municipality, WeatherData> _memCacheData = {};
 
-  Future<CurrentWeather> getWeather(Municipality municipality) async {
-    final memo = _memCache[municipality];
+  Future<WeatherData> getWeatherData(Municipality municipality) async {
+    final memo = _memCacheData[municipality];
     if (memo != null &&
-        DateTime.now().difference(memo.fetchedAt) < _cacheTtl) {
+        DateTime.now().difference(memo.current.fetchedAt) < _cacheTtl) {
       return memo;
     }
 
     try {
-      final fresh = await _api.fetchWeather(municipality);
-      _memCache[municipality] = fresh;
-      await _dao.upsert(municipality, fresh);
+      final fresh = await _api.fetchWeatherData(municipality);
+      _memCacheData[municipality] = fresh;
+      await _dao.upsertWeatherData(municipality, fresh);
       return fresh;
     } catch (e) {
-      final stored = await _dao.find(municipality);
+      final stored = await _dao.findWeatherData(municipality);
       if (stored != null) {
-        _memCache[municipality] = stored;
+        _memCacheData[municipality] = stored;
         return stored;
       }
       rethrow;
     }
+  }
+
+  Future<CurrentWeather> getWeather(Municipality municipality) async {
+    final data = await getWeatherData(municipality);
+    return data.current;
   }
 }

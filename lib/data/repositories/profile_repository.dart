@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/errors/error_handling.dart';
 import '../../core/network/api_exceptions.dart';
 import '../../domain/models/municipality.dart';
 import '../../domain/models/profile.dart';
@@ -26,6 +27,18 @@ class ProfileRepository {
   ///     perfil se creó con datos vacíos (primer login tras registro).
   ///  3. Persiste el resultado en SQLite.
   Future<Profile> bootstrapAfterSignIn() async {
+    final profile = await _fetchRemoteProfileMerged();
+    await _dao.upsert(profile);
+    return profile;
+  }
+
+  /// Descarga el perfil desde el servidor y lo guarda en SQLite (sync manual / pull).
+  Future<void> refreshFromServer() async {
+    final profile = await _fetchRemoteProfileMerged();
+    await _dao.upsert(profile);
+  }
+
+  Future<Profile> _fetchRemoteProfileMerged() async {
     final remote = await _api.getProfile();
 
     Profile profile = remote;
@@ -51,7 +64,6 @@ class ProfileRepository {
       }
     }
 
-    await _dao.upsert(profile);
     return profile;
   }
 
@@ -95,19 +107,27 @@ class ProfileRepository {
 
   /// Sube al backend cualquier actualización de perfil guardada mientras
   /// estaba sin conexión. Se llama al detectar reconexión.
-  Future<void> syncPendingProfile() async {
+  ///
+  /// Retorna `false` si había pendiente y falló la subida.
+  Future<bool> syncPendingProfile() async {
     final pending = await _dao.findPendingUpdate();
-    if (pending == null) return;
+    if (pending == null) return true;
     try {
       final updated = await _api.updateProfile(
         fullName: pending.fullName,
         municipality: pending.municipality,
       );
       await _dao.upsert(updated);
-    } catch (_) {
-      // Reintento en próxima reconexión.
+      return true;
+    } catch (error, stackTrace) {
+      AppErrorHandling.report('profile_sync_pending_failed', error, stackTrace);
+      return false;
     }
   }
+
+  /// `true` si hay cambios de perfil pendientes de subir al servidor.
+  Future<bool> hasPendingProfileUpdate() async =>
+      (await _dao.findPendingUpdate()) != null;
 
   /// Limpia el caché de perfil al cerrar sesión.
   Future<void> clearLocalProfile() async {

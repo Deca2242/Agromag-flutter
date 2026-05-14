@@ -71,6 +71,40 @@ class CropsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
+  /// Nuevos locales cuyo último intento de subida falló (`ERROR`).
+  Future<List<Crop>> newLocalErrorByProfile(String profileId) async {
+    final db = LocalDb.instance.db;
+    final rows = await db.rawQuery(
+      'SELECT * FROM $_table WHERE profile_id = ? AND sync_status = ? AND is_new_local = 1 AND pending_delete = 0 ORDER BY created_at ASC',
+      [profileId, SyncStatus.ERROR.name],
+    );
+    return rows.map(_fromRow).toList();
+  }
+
+  /// Ediciones cuyo último intento de subida falló (`ERROR`).
+  Future<List<Crop>> editedErrorByProfile(String profileId) async {
+    final db = LocalDb.instance.db;
+    final rows = await db.rawQuery(
+      'SELECT * FROM $_table WHERE profile_id = ? AND sync_status = ? AND is_new_local = 0 AND pending_delete = 0 ORDER BY created_at ASC',
+      [profileId, SyncStatus.ERROR.name],
+    );
+    return rows.map(_fromRow).toList();
+  }
+
+  /// Filas en `ERROR` sin borrado pendente (para badge de sync).
+  Future<int> countErrorByProfile(String profileId) async {
+    final db = LocalDb.instance.db;
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM $_table WHERE profile_id = ? AND sync_status = ? AND pending_delete = 0',
+      [profileId, SyncStatus.ERROR.name],
+    );
+    if (rows.isEmpty) return 0;
+    final n = rows.first['c'];
+    if (n is int) return n;
+    if (n is num) return n.toInt();
+    return 0;
+  }
+
   /// Returns crops pending deletion on the server.
   Future<List<Crop>> pendingDeletesByProfile(String profileId) async {
     final db = LocalDb.instance.db;

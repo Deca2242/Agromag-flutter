@@ -129,8 +129,10 @@ class HomeScreen extends ConsumerWidget {
                   source: 'Open-Meteo',
                   temperature: '--°C',
                   humidity: '--%',
-                  onRetry: () =>
-                      ref.invalidate(currentWeatherProvider(municipality)),
+                  onRetry: () {
+                    ref.invalidate(currentWeatherProvider(municipality));
+                    ref.invalidate(weatherDataProvider(municipality));
+                  },
                 ),
                 data: (w) => WeatherCard(
                   location: municipality.label,
@@ -138,6 +140,10 @@ class HomeScreen extends ConsumerWidget {
                   temperature: w.temperatureLabel,
                   humidity: w.humidityLabel,
                   fetchedAt: w.fetchedAt,
+                  onTap: () => context.pushNamed(
+                    AppRoutes.homeWeatherName,
+                    extra: municipality,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

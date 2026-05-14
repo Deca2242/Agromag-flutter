@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../../core/errors/error_handling.dart';
 import '../../core/network/api_exceptions.dart';
 import '../services/crops_api.dart';
 import '../services/crops_local_dao.dart';
@@ -96,23 +97,47 @@ class CropsRepository {
   }
 
   /// Descarga los cultivos del servidor y los upserta en SQLite.
-  Future<void> refreshFromServer({required String profileId}) async {
+  ///
+  /// Retorna `true` si la descarga tuvo éxito (sync manual / pull).
+  Future<bool> pullCropsFromServer({required String profileId}) async {
     try {
       final remote = await _api.list();
       await _dao.upsertFromServer(remote, profileId: profileId);
-    } catch (_) {
-      // Sin red: silencioso, los datos locales siguen siendo válidos.
+      return true;
+    } catch (error, stackTrace) {
+      AppErrorHandling.report(
+        'crops_refresh_from_server_failed profileId=$profileId',
+        error,
+        stackTrace,
+      );
+      return false;
     }
+  }
+
+  /// Igual que [pullCropsFromServer] pero ignora el resultado (refresh en background).
+  Future<void> refreshFromServer({required String profileId}) async {
+    await pullCropsFromServer(profileId: profileId);
+  }
+
+  /// IDs de cultivos locales no marcados para borrar (para pull de eventos).
+  Future<List<String>> listLocalCropIds({required String profileId}) async {
+    final crops = await _dao.listByProfile(profileId);
+    return crops.map((c) => c.id).toList();
   }
 
   /// Envía nuevos cultivos (is_new_local=1) al backend mediante sync/batch,
   /// y sube ediciones pendientes (is_new_local=0) vía PUT individual.
+  ///
+  /// Incluye cultivos en `ERROR` para reintentar subidas fallidas.
   Future<SyncReport> syncPending({required String profileId}) async {
     int synced = 0;
     int failed = 0;
 
-    // 1. Nuevos cultivos → batch
-    final newCrops = await _dao.newLocalPendingByProfile(profileId);
+    // 1. Nuevos cultivos (PENDING + ERROR) → batch
+    final newCrops = _unionCropsById(
+      await _dao.newLocalPendingByProfile(profileId),
+      await _dao.newLocalErrorByProfile(profileId),
+    );
     if (newCrops.isNotEmpty) {
       try {
         final result = await _syncApi.postBatch(crops: newCrops);
@@ -127,8 +152,11 @@ class CropsRepository {
       }
     }
 
-    // 2. Ediciones pendientes → PUT individual
-    final edited = await _dao.editedPendingByProfile(profileId);
+    // 2. Ediciones pendientes (PENDING + ERROR) → PUT individual
+    final edited = _unionCropsById(
+      await _dao.editedPendingByProfile(profileId),
+      await _dao.editedErrorByProfile(profileId),
+    );
     for (final crop in edited) {
       try {
         final serverCrop = await _api.update(crop);
@@ -154,20 +182,19 @@ class CropsRepository {
     return SyncReport(synced: synced, failed: failed);
   }
 
-  /// Reintenta cultivos en estado ERROR.
+  /// Reintenta cultivos en estado ERROR (y el resto de pendientes).
   Future<SyncReport> retryErrors({required String profileId}) async {
-    final errors = await _dao.pendingByProfile(profileId);
-    if (errors.isEmpty) return const SyncReport(synced: 0, failed: 0);
     return syncPending(profileId: profileId);
   }
 
   Future<Crop?> getById(String id) => _dao.findById(id);
 
-  /// Counts crops with PENDING status (for badge).
+  /// Cultivos PENDING + ERROR sin borrado pendiente, más borrados pendientes (badge).
   Future<int> pendingCount({required String profileId}) async {
     final pending = await _dao.pendingByProfile(profileId);
+    final errors = await _dao.countErrorByProfile(profileId);
     final deletes = await _dao.pendingDeletesByProfile(profileId);
-    return pending.length + deletes.length;
+    return pending.length + errors + deletes.length;
   }
 
   static String _generateUuid() {
@@ -180,5 +207,18 @@ class CropsRepository {
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
         '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
         '${hex.substring(20)}';
+  }
+
+  /// Une listas por `id` sin duplicados (prioriza el orden del primer iterable).
+  static List<Crop> _unionCropsById(Iterable<Crop> first, Iterable<Crop> second) {
+    final seen = <String>{};
+    final out = <Crop>[];
+    for (final c in first) {
+      if (seen.add(c.id)) out.add(c);
+    }
+    for (final c in second) {
+      if (seen.add(c.id)) out.add(c);
+    }
+    return out;
   }
 }

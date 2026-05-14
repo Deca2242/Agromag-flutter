@@ -8,6 +8,7 @@ import 'package:sqflite/sqflite.dart';
 ///   v2 — tabla `crops` con offline-first sync queue.
 ///   v3 — columnas pending_update/pending_delete/is_new_local,
 ///         tablas `weather_cache` y `crop_events`.
+///   v4 — columna `forecast_json` en `weather_cache`.
 class LocalDb {
   LocalDb._();
 
@@ -27,7 +28,7 @@ class LocalDb {
 
     _db = await openDatabase(
       fullPath,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -92,7 +93,8 @@ class LocalDb {
         municipality TEXT PRIMARY KEY,
         temperature REAL NOT NULL,
         humidity REAL NOT NULL,
-        fetched_at TEXT NOT NULL
+        fetched_at TEXT NOT NULL,
+        forecast_json TEXT
       )
     ''');
   }
@@ -143,6 +145,13 @@ class LocalDb {
 
       await _createWeatherCacheTable(db);
       await _createCropEventsTable(db);
+    }
+    if (oldVersion < 4) {
+      try {
+        await db.execute(
+          'ALTER TABLE weather_cache ADD COLUMN forecast_json TEXT',
+        );
+      } catch (_) {}
     }
   }
 

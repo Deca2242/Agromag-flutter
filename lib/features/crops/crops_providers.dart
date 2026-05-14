@@ -50,13 +50,22 @@ final cropByIdProvider =
 
 // ── Pending sync count ─────────────────────────────────────────────────────
 
-/// Total de cultivos pendientes de sincronizar (para badge en AppBar).
+/// Pendientes de subir o bajar: cultivos (PENDING/ERROR/delete) + eventos sin
+/// subir + perfil con `pending_update`.
 final pendingSyncCountProvider = FutureProvider<int>((ref) async {
   final session = ref.watch(authSessionProvider).value;
   if (session == null) return 0;
-  return ref
+  final profileId = session.user.id;
+  final cropsPending = await ref
       .read(cropsRepositoryProvider)
-      .pendingCount(profileId: session.user.id);
+      .pendingCount(profileId: profileId);
+  final eventsUnsynced =
+      await ref.read(cropEventsRepositoryProvider).countUnsyncedEvents();
+  final profilePending =
+      await ref.read(profileRepositoryProvider).hasPendingProfileUpdate();
+  return cropsPending +
+      eventsUnsynced +
+      (profilePending ? 1 : 0);
 });
 
 // ── Eventos de cultivo ─────────────────────────────────────────────────────

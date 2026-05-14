@@ -22,7 +22,7 @@ class CropsListScreen extends ConsumerWidget {
     final pendingCount = ref.watch(pendingSyncCountProvider).value ?? 0;
 
     void retrySync() {
-      ref.read(syncCoordinatorProvider.notifier).requestSync();
+      requestSyncFromAppBar(context, ref);
     }
 
     return Scaffold(

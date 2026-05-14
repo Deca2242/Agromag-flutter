@@ -11,6 +11,7 @@ class WeatherCard extends StatelessWidget {
     required this.humidity,
     this.onRetry,
     this.fetchedAt,
+    this.onTap,
   });
 
   final String location;
@@ -21,10 +22,12 @@ class WeatherCard extends StatelessWidget {
   final VoidCallback? onRetry;
   /// Cuándo se obtuvo el dato; si tiene más de 15 min se muestra aviso.
   final DateTime? fetchedAt;
+  /// Abre detalle del clima (p. ej. pronóstico y gráficos).
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    Widget card = Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -131,6 +134,17 @@ class WeatherCard extends StatelessWidget {
         ],
       ),
     );
+    if (onTap != null) {
+      card = Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: card,
+        ),
+      );
+    }
+    return card;
   }
 
   static int _minutesAgo(DateTime t) =>

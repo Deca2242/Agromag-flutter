@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../../core/errors/error_handling.dart';
 import '../../domain/models/crop_event.dart';
 import '../services/crop_events_api.dart';
 import '../services/crop_events_local_dao.dart';
@@ -55,19 +56,44 @@ class CropEventsRepository {
     } catch (_) {}
   }
 
+  /// Descarga eventos de todos los cultivos indicados desde el servidor.
+  Future<bool> refreshAllFromServer(Iterable<String> cropIds) async {
+    var allOk = true;
+    for (final cropId in cropIds) {
+      try {
+        final remote = await _api.list(cropId);
+        await _dao.upsertAll(remote);
+      } catch (error, stackTrace) {
+        allOk = false;
+        AppErrorHandling.report(
+          'crop_events_refresh_failed cropId=$cropId',
+          error,
+          stackTrace,
+        );
+      }
+    }
+    return allOk;
+  }
+
   /// Sube eventos guardados offline vía `POST /api/sync/batch` (después de cultivos).
-  Future<void> syncPendingViaBatch() async {
+  ///
+  /// Retorna `false` si había pendientes y falló el envío.
+  Future<bool> syncPendingViaBatch() async {
     final unsynced = await _dao.listUnsynced();
-    if (unsynced.isEmpty) return;
+    if (unsynced.isEmpty) return true;
     final payload = unsynced.map((e) => e.toJson()).toList();
     final sentIds = unsynced.map((e) => e.id).toList();
     try {
       await _syncApi.postBatch(crops: const [], events: payload);
       await _dao.markEventsSynced(sentIds);
-    } catch (_) {
-      // Reintento en próximo ciclo del coordinador.
+      return true;
+    } catch (error, stackTrace) {
+      AppErrorHandling.report('crop_events_batch_sync_failed', error, stackTrace);
+      return false;
     }
   }
+
+  Future<int> countUnsyncedEvents() => _dao.countUnsynced();
 
   static String _uuid() {
     final rng = Random.secure();

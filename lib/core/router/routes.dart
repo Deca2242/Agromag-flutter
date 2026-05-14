@@ -8,6 +8,8 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
 
   static const String home = '/home';
+  /// Segmento bajo `/home` (ruta completa: `/home/weather`).
+  static const String homeWeatherSegment = 'weather';
   static const String crops = '/crops';
   static const String cropsNew = '/crops/new';
   static const String cropsDetail = '/crops/:id';
@@ -18,6 +20,7 @@ class AppRoutes {
   static const String assistant = '/assistant';
 
   static const String homeName = 'home';
+  static const String homeWeatherName = 'home-weather';
   static const String cropsName = 'crops';
   static const String cropsNewName = 'crops-new';
   static const String cropsDetailName = 'crops-detail';

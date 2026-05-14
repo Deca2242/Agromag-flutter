@@ -10,6 +10,12 @@ final weatherRepositoryProvider = Provider<WeatherRepository>((ref) {
   return WeatherRepository(api: OpenMeteoApi(), dao: const WeatherLocalDao());
 });
 
+/// Pronóstico completo (actual + horario + 7 días). Misma caché TTL + SQLite.
+final weatherDataProvider =
+    FutureProvider.family<WeatherData, Municipality>((ref, municipality) {
+  return ref.read(weatherRepositoryProvider).getWeatherData(municipality);
+});
+
 /// Solicita el clima actual para el municipio dado.
 /// Fallback a caché SQLite si no hay red.
 final currentWeatherProvider =

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/models/municipality.dart';
 import '../../features/alerts/view/alerts_screen.dart';
 import '../../features/assistant/view/assistant_screen.dart';
 import '../../features/auth/view/forgot_password_screen.dart';
@@ -15,6 +16,7 @@ import '../../features/crops/view/crops_list_screen.dart';
 import '../../features/crops/view/edit_crop_screen.dart';
 import '../../features/crops/view/new_crop_screen.dart';
 import '../../features/home/view/home_screen.dart';
+import '../../features/home/view/weather_details_screen.dart';
 import '../../features/profile/view/edit_profile_screen.dart';
 import '../../features/profile/view/profile_screen.dart';
 import '../../features/splash/view/splash_screen.dart';
@@ -93,6 +95,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.home,
                 name: AppRoutes.homeName,
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.homeWeatherSegment,
+                    name: AppRoutes.homeWeatherName,
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (context, state) {
+                      final m = state.extra as Municipality?;
+                      return WeatherDetailsScreen(
+                        municipality: m ?? Municipality.SANTA_MARTA,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),

@@ -27,6 +27,14 @@ class CropEventsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
+  Future<int> countUnsynced() async {
+    final rows = await LocalDb.instance.db.rawQuery(
+      'SELECT COUNT(*) as c FROM $_table WHERE synced = 0',
+    );
+    if (rows.isEmpty) return 0;
+    return (rows.first['c'] as int?) ?? 0;
+  }
+
   Future<void> markEventsSynced(Iterable<String> ids) async {
     final idList = ids.toList();
     if (idList.isEmpty) return;
