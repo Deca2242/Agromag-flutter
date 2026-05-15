@@ -19,16 +19,16 @@ class ChatNotifier extends StateNotifier<List<ChatMessage>> {
   final AssistantRepository _repo;
 
   static List<ChatMessage> _initialMessages() => [
-        ChatMessage(
-          id: '0',
-          author: ChatAuthor.bot,
-          text:
-              '¡Hola! Soy tu asistente agrícola. Tengo contexto de tus cultivos '
-              'registrados en la app. Pregúntame sobre riego, plagas, fertilización '
-              'u otras labores.',
-          time: DateFormat('hh:mm a').format(DateTime.now()),
-        ),
-      ];
+    ChatMessage(
+      id: '0',
+      author: ChatAuthor.bot,
+      text:
+          '¡Hola! Soy tu asistente agrícola. Tengo contexto de tus cultivos '
+          'registrados en la app. Pregúntame sobre riego, plagas, fertilización '
+          'u otras labores.',
+      time: DateFormat('hh:mm a').format(DateTime.now()),
+    ),
+  ];
 
   /// Returns true if there's a loading placeholder in the state.
   bool get isWaiting => state.any((m) => m.isLoading);
@@ -56,10 +56,7 @@ class ChatNotifier extends StateNotifier<List<ChatMessage>> {
     try {
       final reply = await _repo.sendMessage(text.trim(), state);
       // Replace loading placeholder with actual reply
-      state = [
-        ...state.where((m) => !m.isLoading),
-        reply,
-      ];
+      state = [...state.where((m) => !m.isLoading), reply];
     } catch (_) {
       final errorMsg = ChatMessage(
         id: '${DateTime.now().millisecondsSinceEpoch}_err',
@@ -79,5 +76,5 @@ class ChatNotifier extends StateNotifier<List<ChatMessage>> {
 
 final chatMessagesProvider =
     StateNotifierProvider<ChatNotifier, List<ChatMessage>>((ref) {
-  return ChatNotifier(ref.read(assistantRepositoryProvider));
-});
+      return ChatNotifier(ref.read(assistantRepositoryProvider));
+    });

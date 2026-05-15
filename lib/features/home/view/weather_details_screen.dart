@@ -70,10 +70,7 @@ class WeatherDetailsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _HeaderCard(
-                weather: weather.current,
-                locationName: locationName,
-              ),
+              _HeaderCard(weather: weather.current, locationName: locationName),
               const SizedBox(height: 20),
               _DetailsGrid(weather: weather.current),
               const SizedBox(height: 30),
@@ -103,9 +100,8 @@ class WeatherDetailsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: () => ref.invalidate(
-                    weatherDataProvider(municipality),
-                  ),
+                  onPressed: () =>
+                      ref.invalidate(weatherDataProvider(municipality)),
                   child: const Text('Reintentar'),
                 ),
               ],
@@ -118,10 +114,7 @@ class WeatherDetailsScreen extends ConsumerWidget {
 }
 
 class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({
-    required this.weather,
-    required this.locationName,
-  });
+  const _HeaderCard({required this.weather, required this.locationName});
 
   final CurrentWeather weather;
   final String locationName;
@@ -135,10 +128,7 @@ class _HeaderCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1B3D2F),
-            Color(0xFF2D5A44),
-          ],
+          colors: [Color(0xFF1B3D2F), Color(0xFF2D5A44)],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -305,8 +295,10 @@ class _DetailItem extends StatelessWidget {
               if (badge != null) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -339,10 +331,7 @@ class _HourlyForecast extends StatelessWidget {
     if (hourly.isEmpty) {
       return const Text(
         'Sin datos horarios (revisa la conexión o reintenta más tarde).',
-        style: TextStyle(
-          fontSize: 14,
-          color: AppColors.textSecondary,
-        ),
+        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
       );
     }
     final n = math.min(8, hourly.length);
@@ -418,10 +407,7 @@ class _TemperatureChart extends StatelessWidget {
     if (hourly.length < 2) {
       return const Text(
         'No hay suficientes datos para la gráfica de tendencia.',
-        style: TextStyle(
-          fontSize: 14,
-          color: AppColors.textSecondary,
-        ),
+        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
       );
     }
     final slice = hourly.length > 12 ? hourly.sublist(0, 12) : hourly;
@@ -458,10 +444,8 @@ class _TemperatureChart extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.divider,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (value) =>
+                      FlLine(color: AppColors.divider, strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   show: true,
@@ -581,10 +565,7 @@ class _DailyForecast extends StatelessWidget {
     if (daily.isEmpty) {
       return const Text(
         'Sin pronóstico diario en caché.',
-        style: TextStyle(
-          fontSize: 14,
-          color: AppColors.textSecondary,
-        ),
+        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
       );
     }
     return Column(

@@ -4,6 +4,7 @@ import '../../domain/models/crop.dart';
 import '../../domain/models/crop_type.dart';
 import '../../domain/models/municipality.dart';
 import '../../domain/models/sync_status.dart';
+import 'crop_sync_conflict.dart';
 import 'local_db.dart';
 
 /// Acceso a la tabla `crops` en SQLite.
@@ -157,12 +158,73 @@ class CropsLocalDao {
 
   /// Upsert de cultivos recibidos del servidor — syncStatus siempre SYNCED,
   /// is_new_local=0 (ya existe en el servidor).
-  Future<void> upsertFromServer(
+  ///
+  /// Retorna lista de conflictos detectados cuando el servidor sobrescribe
+  /// datos locales que tenían cambios sin sincronizar.
+  Future<List<CropSyncConflict>> upsertFromServer(
     List<Crop> crops, {
     required String profileId,
   }) async {
-    if (crops.isEmpty) return;
+    if (crops.isEmpty) return [];
     final db = LocalDb.instance.db;
+
+    final conflicts = <CropSyncConflict>[];
+    final serverIds = crops.map((c) => c.id).toSet();
+
+    for (final serverCrop in crops) {
+      final existingRows = await db.query(
+        _table,
+        where: 'id = ?',
+        whereArgs: [serverCrop.id],
+        limit: 1,
+      );
+      if (existingRows.isNotEmpty) {
+        final localCrop = _fromRow(existingRows.first);
+        final localUpdated = localCrop.updatedAt ?? localCrop.createdAt;
+        final serverUpdated = serverCrop.updatedAt ?? serverCrop.createdAt;
+
+        if (localUpdated.isAfter(serverUpdated)) {
+          if (localCrop.areaHectares != serverCrop.areaHectares) {
+            conflicts.add(
+              CropSyncConflict(
+                cropId: serverCrop.id,
+                cropType: localCrop.cropType,
+                fieldName: 'areaHectares',
+                localValue: '${localCrop.areaHectares} ha',
+                serverValue: '${serverCrop.areaHectares} ha',
+              ),
+            );
+          }
+          final localMun = localCrop.municipality.name;
+          final serverMun = serverCrop.municipality.name;
+          if (localMun != serverMun) {
+            conflicts.add(
+              CropSyncConflict(
+                cropId: serverCrop.id,
+                cropType: localCrop.cropType,
+                fieldName: 'municipality',
+                localValue: localCrop.municipality.label,
+                serverValue: serverCrop.municipality.label,
+              ),
+            );
+          }
+          final localSown = _dateStr(localCrop.sownDate);
+          final serverSown = _dateStr(serverCrop.sownDate);
+          if (localSown != serverSown) {
+            conflicts.add(
+              CropSyncConflict(
+                cropId: serverCrop.id,
+                cropType: localCrop.cropType,
+                fieldName: 'sownDate',
+                localValue: localSown,
+                serverValue: serverSown,
+              ),
+            );
+          }
+        }
+      }
+    }
+
     final batch = db.batch();
     for (final crop in crops) {
       batch.insert(
@@ -173,7 +235,6 @@ class CropsLocalDao {
     }
     await batch.commit(noResult: true);
 
-    final serverIds = crops.map((c) => c.id).toSet();
     final localCrops = await listByProfile(profileId);
     final orphaned = localCrops
         .where((c) => !serverIds.contains(c.id))
@@ -186,6 +247,8 @@ class CropsLocalDao {
         [SyncStatus.SYNCED.name, ...orphaned],
       );
     }
+
+    return conflicts;
   }
 
   /// Updates an existing crop row keeping is_new_local as-is.
@@ -199,7 +262,9 @@ class CropsLocalDao {
         'municipality': crop.municipality.name,
         'sown_date': _dateStr(crop.sownDate),
         'sync_status': crop.syncStatus.name,
-        'updated_at': crop.updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+        'updated_at':
+            crop.updatedAt?.toIso8601String() ??
+            DateTime.now().toIso8601String(),
         'pending_delete': 0,
       },
       where: 'id = ?',

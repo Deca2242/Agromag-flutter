@@ -71,10 +71,9 @@ class _EditCropScreenState extends ConsumerState<EditCropScreen> {
         sownDate: _sownDate,
       );
 
-      await ref.read(cropsRepositoryProvider).updateCrop(
-            updated,
-            profileId: session.user.id,
-          );
+      await ref
+          .read(cropsRepositoryProvider)
+          .updateCrop(updated, profileId: session.user.id);
 
       ref.invalidate(cropsProvider);
       ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
@@ -156,10 +155,9 @@ class _EditCropScreenState extends ConsumerState<EditCropScreen> {
               children: [
                 Text(
                   'Editar Cultivo',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
@@ -172,8 +170,7 @@ class _EditCropScreenState extends ConsumerState<EditCropScreen> {
                   cropType: _cropType,
                   municipality: _municipality,
                   sownDate: _sownDate,
-                  onCropTypeChanged: (v) =>
-                      setState(() => _cropType = v),
+                  onCropTypeChanged: (v) => setState(() => _cropType = v),
                   onMunicipalityChanged: (v) =>
                       setState(() => _municipality = v),
                   onDateChanged: (d) => setState(() => _sownDate = d),

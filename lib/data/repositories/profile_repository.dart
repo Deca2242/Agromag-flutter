@@ -12,8 +12,8 @@ class ProfileRepository {
   const ProfileRepository({
     required ProfileApi api,
     required ProfileLocalDao dao,
-  })  : _api = api,
-        _dao = dao;
+  }) : _api = api,
+       _dao = dao;
 
   final ProfileApi _api;
   final ProfileLocalDao _dao;
@@ -83,14 +83,14 @@ class ProfileRepository {
     final current = await _dao.findAny();
     final optimistic =
         current?.copyWith(fullName: fullName, municipality: municipality) ??
-            Profile(
-              id: '',
-              email: '',
-              role: current?.role ?? (throw StateError('No profile in cache')),
-              fullName: fullName,
-              municipality: municipality,
-              createdAt: DateTime.now(),
-            );
+        Profile(
+          id: '',
+          email: '',
+          role: current?.role ?? (throw StateError('No profile in cache')),
+          fullName: fullName,
+          municipality: municipality,
+          createdAt: DateTime.now(),
+        );
 
     try {
       final updated = await _api.updateProfile(

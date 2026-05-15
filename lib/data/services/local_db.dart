@@ -203,4 +203,40 @@ class LocalDb {
     await db.delete('auth_state');
     await db.delete('pending_decisions');
   }
+
+  /// Limpia datos antiguos ya sincronizados para evitar crecimiento indefinido de la BD.
+  ///
+  /// Reglas de purga:
+  ///   - crops con pending_delete=1 → borrado físico (ya confirmados por servidor).
+  ///   - crop_events con synced=1 y older than 30 días → se pueden re-descargar.
+  ///   - weather_cache con fetched_at older than 24h → se refresca automáticamente.
+  ///   - pending_decisions → NO se purgan aquí (se borran tras sync exitoso).
+  ///
+  /// Debe llamarse tras un sync exitoso (isFullSuccess).
+  Future<void> purgeOldSyncedData() async {
+    final db = _db;
+    if (db == null) return;
+
+    final now = DateTime.now();
+    final thirtyDaysAgo = now
+        .subtract(const Duration(days: 30))
+        .toIso8601String();
+    final twentyFourHoursAgo = now
+        .subtract(const Duration(hours: 24))
+        .toIso8601String();
+
+    // 1. Cultivos marcados para borrar (ya sincronizados con servidor)
+    await db.delete('crops', where: 'pending_delete = 1');
+
+    // 2. Eventos sincronizados older than 30 días
+    await db.rawDelete(
+      'DELETE FROM crop_events WHERE synced = 1 AND event_date < ?',
+      [thirtyDaysAgo],
+    );
+
+    // 3. Weather cache older than 24h
+    await db.rawDelete('DELETE FROM weather_cache WHERE fetched_at < ?', [
+      twentyFourHoursAgo,
+    ]);
+  }
 }

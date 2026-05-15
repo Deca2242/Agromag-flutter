@@ -27,11 +27,7 @@ class BrandLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(rounded ? size * 0.28 : 0),
       ),
       alignment: Alignment.center,
-      child: Icon(
-        Icons.eco,
-        color: foreground,
-        size: size * 0.6,
-      ),
+      child: Icon(Icons.eco, color: foreground, size: size * 0.6),
     );
   }
 }

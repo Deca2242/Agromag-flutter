@@ -13,11 +13,7 @@ class WeatherLocalDao {
   Future<void> upsert(Municipality municipality, CurrentWeather weather) async {
     await upsertWeatherData(
       municipality,
-      WeatherData(
-        current: weather,
-        hourly: const [],
-        daily: const [],
-      ),
+      WeatherData(current: weather, hourly: const [], daily: const []),
     );
   }
 
@@ -26,17 +22,13 @@ class WeatherLocalDao {
     WeatherData data,
   ) async {
     final w = data.current;
-    await LocalDb.instance.db.insert(
-      'weather_cache',
-      {
-        'municipality': municipality.name,
-        'temperature': w.temperature,
-        'humidity': w.humidity,
-        'fetched_at': w.fetchedAt.toIso8601String(),
-        'forecast_json': jsonEncode(data.toJson()),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await LocalDb.instance.db.insert('weather_cache', {
+      'municipality': municipality.name,
+      'temperature': w.temperature,
+      'humidity': w.humidity,
+      'fetched_at': w.fetchedAt.toIso8601String(),
+      'forecast_json': jsonEncode(data.toJson()),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<CurrentWeather?> find(Municipality municipality) async {

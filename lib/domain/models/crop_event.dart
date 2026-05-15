@@ -9,20 +9,20 @@ enum EventType {
   OBSERVATION;
 
   String get label => switch (this) {
-        EventType.IRRIGATION => 'Riego',
-        EventType.FERTILIZER => 'Fertilización',
-        EventType.PESTICIDE => 'Pesticida',
-        EventType.FUNGICIDE => 'Fungicida',
-        EventType.OBSERVATION => 'Observación',
-      };
+    EventType.IRRIGATION => 'Riego',
+    EventType.FERTILIZER => 'Fertilización',
+    EventType.PESTICIDE => 'Pesticida',
+    EventType.FUNGICIDE => 'Fungicida',
+    EventType.OBSERVATION => 'Observación',
+  };
 
   IconData get icon => switch (this) {
-        EventType.IRRIGATION => Icons.water_drop_outlined,
-        EventType.FERTILIZER => Icons.eco_outlined,
-        EventType.PESTICIDE => Icons.bug_report_outlined,
-        EventType.FUNGICIDE => Icons.science_outlined,
-        EventType.OBSERVATION => Icons.visibility_outlined,
-      };
+    EventType.IRRIGATION => Icons.water_drop_outlined,
+    EventType.FERTILIZER => Icons.eco_outlined,
+    EventType.PESTICIDE => Icons.bug_report_outlined,
+    EventType.FUNGICIDE => Icons.science_outlined,
+    EventType.OBSERVATION => Icons.visibility_outlined,
+  };
 
   static EventType fromJson(String s) {
     return EventType.values.firstWhere(
@@ -79,8 +79,10 @@ class CropEvent {
       if (quantity != null) 'quantity': quantity,
       if (unit != null) 'unit': unit,
       if (notes != null) 'notes': notes,
-      'occurredAt':
-          occurredAt.toIso8601String().replaceFirst(RegExp(r'\..*'), ''),
+      'occurredAt': occurredAt.toIso8601String().replaceFirst(
+        RegExp(r'\..*'),
+        '',
+      ),
     };
   }
 

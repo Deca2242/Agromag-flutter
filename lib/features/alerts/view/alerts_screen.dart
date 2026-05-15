@@ -36,10 +36,9 @@ class AlertsScreen extends ConsumerWidget {
             children: [
               Text(
                 'Alertas y Notificaciones',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 4),
               const Text(

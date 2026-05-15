@@ -15,10 +15,10 @@ class WeatherData {
   final List<DailyWeather> daily;
 
   Map<String, dynamic> toJson() => {
-        'current': current.toJson(),
-        'hourly': hourly.map((e) => e.toJson()).toList(),
-        'daily': daily.map((e) => e.toJson()).toList(),
-      };
+    'current': current.toJson(),
+    'hourly': hourly.map((e) => e.toJson()).toList(),
+    'daily': daily.map((e) => e.toJson()).toList(),
+  };
 
   static WeatherData fromJson(Map<String, dynamic> json) {
     return WeatherData(
@@ -26,10 +26,14 @@ class WeatherData {
         Map<String, dynamic>.from(json['current'] as Map),
       ),
       hourly: (json['hourly'] as List<dynamic>)
-          .map((e) => HourlyWeather.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => HourlyWeather.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList(),
       daily: (json['daily'] as List<dynamic>)
-          .map((e) => DailyWeather.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => DailyWeather.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList(),
     );
   }
@@ -73,16 +77,16 @@ class CurrentWeather {
   String get humidityLabel => '${humidity.toStringAsFixed(0)}%';
 
   Map<String, dynamic> toJson() => {
-        'temperature': temperature,
-        'humidity': humidity,
-        'fetchedAt': fetchedAt.toIso8601String(),
-        'source': source,
-        'windSpeed': windSpeed,
-        'uvIndex': uvIndex,
-        'rain': rain,
-        'condition': condition,
-        'weatherCode': weatherCode,
-      };
+    'temperature': temperature,
+    'humidity': humidity,
+    'fetchedAt': fetchedAt.toIso8601String(),
+    'source': source,
+    'windSpeed': windSpeed,
+    'uvIndex': uvIndex,
+    'rain': rain,
+    'condition': condition,
+    'weatherCode': weatherCode,
+  };
 
   factory CurrentWeather.fromJson(Map<String, dynamic> json) {
     return CurrentWeather(
@@ -127,10 +131,10 @@ class HourlyWeather {
   final int weatherCode;
 
   Map<String, dynamic> toJson() => {
-        'time': time.toIso8601String(),
-        'temperature': temperature,
-        'weatherCode': weatherCode,
-      };
+    'time': time.toIso8601String(),
+    'temperature': temperature,
+    'weatherCode': weatherCode,
+  };
 
   factory HourlyWeather.fromJson(Map<String, dynamic> json) {
     return HourlyWeather(
@@ -156,11 +160,11 @@ class DailyWeather {
   final int weatherCode;
 
   Map<String, dynamic> toJson() => {
-        'date': date.toIso8601String(),
-        'minTemp': minTemp,
-        'maxTemp': maxTemp,
-        'weatherCode': weatherCode,
-      };
+    'date': date.toIso8601String(),
+    'minTemp': minTemp,
+    'maxTemp': maxTemp,
+    'weatherCode': weatherCode,
+  };
 
   factory DailyWeather.fromJson(Map<String, dynamic> json) {
     return DailyWeather(

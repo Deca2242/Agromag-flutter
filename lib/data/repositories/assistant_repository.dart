@@ -10,7 +10,9 @@ class AssistantRepository {
   final AssistantApi _api;
 
   Future<ChatMessage> sendMessage(
-      String text, List<ChatMessage> history) async {
+    String text,
+    List<ChatMessage> history,
+  ) async {
     final reply = await _api.sendMessage(text, history);
     return ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),

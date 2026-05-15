@@ -84,9 +84,7 @@ class AppTheme {
           horizontal: 16,
           vertical: 14,
         ),
-        hintStyle: textTheme.bodyMedium?.copyWith(
-          color: AppColors.textMuted,
-        ),
+        hintStyle: textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
@@ -127,9 +125,7 @@ class AppTheme {
           color: AppColors.primaryGreenDark,
           fontWeight: FontWeight.w700,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       ),
       navigationBarTheme: NavigationBarThemeData(

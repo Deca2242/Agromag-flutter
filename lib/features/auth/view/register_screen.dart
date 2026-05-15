@@ -37,13 +37,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_municipality == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona tu municipio.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Selecciona tu municipio.')));
       return;
     }
 
-    await ref.read(authControllerProvider.notifier).signUp(
+    await ref
+        .read(authControllerProvider.notifier)
+        .signUp(
           email: _emailCtrl.text.trim(),
           password: _passCtrl.text,
           fullName: _nameCtrl.text.trim(),
@@ -107,16 +109,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Text(
                     'AgroMagdalena',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.primaryGreen,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Crear cuenta',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Container(
@@ -172,8 +174,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         const SizedBox(height: 16),
                         _MunicipalityDropdown(
                           value: _municipality,
-                          onChanged: (v) =>
-                              setState(() => _municipality = v),
+                          onChanged: (v) => setState(() => _municipality = v),
                         ),
                         const SizedBox(height: 16),
                         AuthTextField(
@@ -216,8 +217,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   ),
                                 )
                               : const Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text('Registrarme'),
                                     SizedBox(width: 8),
@@ -236,9 +236,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     child: Text.rich(
                       TextSpan(
                         text: '¿Ya tienes cuenta? ',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                        ),
+                        style: const TextStyle(color: AppColors.textSecondary),
                         children: const [
                           TextSpan(
                             text: 'Inicia sesión',
@@ -262,10 +260,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 }
 
 class _MunicipalityDropdown extends StatelessWidget {
-  const _MunicipalityDropdown({
-    required this.value,
-    required this.onChanged,
-  });
+  const _MunicipalityDropdown({required this.value, required this.onChanged});
 
   final Municipality? value;
   final ValueChanged<Municipality?> onChanged;
@@ -275,21 +270,13 @@ class _MunicipalityDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Municipio',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
+        const Text('Municipio', style: TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         DropdownButtonFormField<Municipality>(
           initialValue: value,
           decoration: const InputDecoration(hintText: 'Seleccionar...'),
           items: Municipality.values
-              .map(
-                (m) => DropdownMenuItem(
-                  value: m,
-                  child: Text(m.label),
-                ),
-              )
+              .map((m) => DropdownMenuItem(value: m, child: Text(m.label)))
               .toList(),
           onChanged: onChanged,
           validator: (v) => v == null ? 'Selecciona tu municipio.' : null,

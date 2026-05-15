@@ -12,6 +12,7 @@ class CropListCard extends StatelessWidget {
   const CropListCard({super.key, required this.crop, this.onRetrySync});
 
   final Crop crop;
+
   /// Llamado cuando el usuario toca el badge de error para reintentar sync.
   final VoidCallback? onRetrySync;
 
@@ -61,10 +62,7 @@ class CropListCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                _SyncStatusBadge(
-                  status: crop.syncStatus,
-                  onRetry: onRetrySync,
-                ),
+                _SyncStatusBadge(status: crop.syncStatus, onRetry: onRetrySync),
               ],
             ),
             const SizedBox(height: 12),
@@ -77,10 +75,7 @@ class CropListCard extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: _Stat(
-                    label: 'ÁREA',
-                    value: '${crop.areaHectares} ha',
-                  ),
+                  child: _Stat(label: 'ÁREA', value: '${crop.areaHectares} ha'),
                 ),
                 Expanded(
                   child: _Stat(
@@ -128,34 +123,34 @@ class _SyncStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (status) {
       SyncStatus.SYNCED => const Tooltip(
-          message: 'Sincronizado',
-          child: Icon(
-            Icons.cloud_done_outlined,
-            size: 20,
-            color: AppColors.primaryGreen,
-          ),
+        message: 'Sincronizado',
+        child: Icon(
+          Icons.cloud_done_outlined,
+          size: 20,
+          color: AppColors.primaryGreen,
         ),
+      ),
       SyncStatus.PENDING => const Tooltip(
-          message: 'Pendiente de sincronización',
-          child: Icon(
-            Icons.cloud_upload_outlined,
-            size: 20,
-            color: AppColors.warningAmber,
-          ),
+        message: 'Pendiente de sincronización',
+        child: Icon(
+          Icons.cloud_upload_outlined,
+          size: 20,
+          color: AppColors.warningAmber,
         ),
+      ),
       SyncStatus.ERROR => GestureDetector(
-          onTap: onRetry,
-          child: Tooltip(
-            message: 'Error de sincronización. Toca para reintentar.',
-            child: Icon(
-              Icons.cloud_off,
-              size: 20,
-              color: onRetry != null
-                  ? AppColors.alertRed
-                  : AppColors.textSecondary,
-            ),
+        onTap: onRetry,
+        child: Tooltip(
+          message: 'Error de sincronización. Toca para reintentar.',
+          child: Icon(
+            Icons.cloud_off,
+            size: 20,
+            color: onRetry != null
+                ? AppColors.alertRed
+                : AppColors.textSecondary,
           ),
         ),
+      ),
     };
   }
 }
@@ -182,10 +177,7 @@ class _Stat extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
           overflow: TextOverflow.ellipsis,
         ),
       ],

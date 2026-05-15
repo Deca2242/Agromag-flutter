@@ -9,7 +9,8 @@ sealed class ApiException implements Exception {
 
 /// 401 — sesión expirada sin posibilidad de refresh.
 final class UnauthorizedException extends ApiException {
-  const UnauthorizedException() : super('Sesión expirada. Inicia sesión de nuevo.');
+  const UnauthorizedException()
+    : super('Sesión expirada. Inicia sesión de nuevo.');
 }
 
 /// 404 — recurso no encontrado.
@@ -24,11 +25,13 @@ final class ValidationException extends ApiException {
 
 /// Cualquier otro error del servidor (5xx, etc.).
 final class ServerException extends ApiException {
-  const ServerException([super.message = 'Error del servidor. Intenta más tarde.']);
+  const ServerException([
+    super.message = 'Error del servidor. Intenta más tarde.',
+  ]);
 }
 
 /// Sin conexión a internet.
 final class NetworkException extends ApiException {
   const NetworkException()
-      : super('Sin conexión. Verifica tu red e intenta de nuevo.');
+    : super('Sin conexión. Verifica tu red e intenta de nuevo.');
 }

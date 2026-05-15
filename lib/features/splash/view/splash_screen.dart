@@ -77,13 +77,10 @@ class _SplashScreenState extends State<SplashScreen> {
                   const SizedBox(height: 24),
                   Text(
                     'AgroMagdalena',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   const SizedBox(
@@ -91,8 +88,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     height: 36,
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.white70),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
                     ),
                   ),
                 ],
@@ -117,10 +113,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     SizedBox(height: 6),
                     SizedBox(
                       width: 64,
-                      child: Divider(
-                        color: Colors.white54,
-                        thickness: 1,
-                      ),
+                      child: Divider(color: Colors.white54, thickness: 1),
                     ),
                   ],
                 ),

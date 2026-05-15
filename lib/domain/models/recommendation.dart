@@ -4,10 +4,10 @@ enum RecommendationLevel { moderate, alert, optimal }
 
 extension RecommendationLevelX on RecommendationLevel {
   String get label => switch (this) {
-        RecommendationLevel.moderate => 'MODERADO',
-        RecommendationLevel.alert => 'ALERTA',
-        RecommendationLevel.optimal => 'ÓPTIMO',
-      };
+    RecommendationLevel.moderate => 'MODERADO',
+    RecommendationLevel.alert => 'ALERTA',
+    RecommendationLevel.optimal => 'ÓPTIMO',
+  };
 }
 
 enum RecommendationType { irrigation, fertilizer, phytosanitary }
@@ -35,10 +35,12 @@ class Recommendation {
   final int iconCodePoint;
   final Color accentColor;
   final String? cropId;
+
   /// Código del enum backend (`BANANO`, …) para etiqueta si no hay `Crop` local.
   final String? cropTypeCode;
   final RecommendationType? type;
   final DateTime? generatedAt;
+
   /// `null` = pendiente de decisión; `true` = realizada; `false` = rechazada.
   final bool? followed;
 
@@ -61,20 +63,20 @@ class Recommendation {
     final level = _levelFromString(json['level'] as String?);
     final (title, icon, color) = switch (type) {
       RecommendationType.irrigation => (
-          'Riego',
-          Icons.water_drop_outlined.codePoint,
-          const Color(0xFF1565C0),
-        ),
+        'Riego',
+        Icons.water_drop_outlined.codePoint,
+        const Color(0xFF1565C0),
+      ),
       RecommendationType.fertilizer => (
-          'Fertilización',
-          Icons.eco_outlined.codePoint,
-          const Color(0xFF8A4B00),
-        ),
+        'Fertilización',
+        Icons.eco_outlined.codePoint,
+        const Color(0xFF8A4B00),
+      ),
       RecommendationType.phytosanitary => (
-          'Fitosanitario',
-          Icons.bug_report_outlined.codePoint,
-          const Color(0xFFD32F2F),
-        ),
+        'Fitosanitario',
+        Icons.bug_report_outlined.codePoint,
+        const Color(0xFFD32F2F),
+      ),
     };
     final followedRaw = json['followed'];
     bool? followed;

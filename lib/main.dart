@@ -15,19 +15,12 @@ Future<void> main() async {
   await dotenv.load();
 
   // 2. Inicializa Supabase (restaura la sesión guardada automáticamente)
-  await Supabase.initialize(
-    url: Env.supabaseUrl,
-    anonKey: Env.supabaseAnonKey,
-  );
+  await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
 
   // 3. Abre la base de datos SQLite local
   await LocalDb.instance.open();
 
   await initializeDateFormatting('es');
 
-  runApp(
-    const ProviderScope(
-      child: AgroMagdalenaApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: AgroMagdalenaApp()));
 }

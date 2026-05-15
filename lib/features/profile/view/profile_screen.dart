@@ -36,9 +36,8 @@ class ProfileScreen extends ConsumerWidget {
         child: AdaptiveBody(
           child: profileAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => const Center(
-              child: Text('No se pudo cargar el perfil.'),
-            ),
+            error: (_, _) =>
+                const Center(child: Text('No se pudo cargar el perfil.')),
             data: (profile) {
               if (profile == null) {
                 return const Center(child: Text('Sin sesión activa.'));
@@ -97,10 +96,9 @@ class _ProfileBody extends StatelessWidget {
         Center(
           child: Text(
             profile.fullName.isEmpty ? profile.email : profile.fullName,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
         ),
         const SizedBox(height: 4),
@@ -124,10 +122,7 @@ class _ProfileBody extends StatelessWidget {
         const SizedBox(height: 12),
         Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.softGreenBg,
               borderRadius: BorderRadius.circular(999),

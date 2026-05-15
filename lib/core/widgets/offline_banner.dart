@@ -7,7 +7,7 @@ class OfflineBanner extends StatelessWidget {
     super.key,
     this.message =
         'Estás navegando sin conexión. Algunos datos pueden estar '
-            'desactualizados.',
+        'desactualizados.',
   });
 
   final String message;

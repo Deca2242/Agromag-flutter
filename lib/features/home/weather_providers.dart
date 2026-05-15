@@ -11,8 +11,10 @@ final weatherRepositoryProvider = Provider<WeatherRepository>((ref) {
 });
 
 /// Pronóstico completo (actual + horario + 7 días). Misma caché TTL + SQLite.
-final weatherDataProvider =
-    FutureProvider.family<WeatherData, Municipality>((ref, municipality) {
+final weatherDataProvider = FutureProvider.family<WeatherData, Municipality>((
+  ref,
+  municipality,
+) {
   return ref.read(weatherRepositoryProvider).getWeatherData(municipality);
 });
 
@@ -20,5 +22,5 @@ final weatherDataProvider =
 /// Fallback a caché SQLite si no hay red.
 final currentWeatherProvider =
     FutureProvider.family<CurrentWeather, Municipality>((ref, municipality) {
-  return ref.read(weatherRepositoryProvider).getWeather(municipality);
-});
+      return ref.read(weatherRepositoryProvider).getWeather(municipality);
+    });

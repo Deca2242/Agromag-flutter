@@ -59,10 +59,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    await ref.read(authControllerProvider.notifier).signIn(
-          email: _emailCtrl.text.trim(),
-          password: _passwordCtrl.text,
-        );
+    await ref
+        .read(authControllerProvider.notifier)
+        .signIn(email: _emailCtrl.text.trim(), password: _passwordCtrl.text);
 
     if (!mounted) return;
     final errorMsg = ref.read(authControllerProvider.notifier).errorMessage;
@@ -127,9 +126,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: TextButton(
                             onPressed: isLoading
                                 ? null
-                                : () => context.pushNamed(
-                                      AppRoutes.forgotName,
-                                    ),
+                                : () => context.pushNamed(AppRoutes.forgotName),
                             child: const Text('¿Olvidaste tu contraseña?'),
                           ),
                         ),
@@ -161,9 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       TextButton(
                         onPressed: isLoading
                             ? null
-                            : () => context.pushNamed(
-                                  AppRoutes.registerName,
-                                ),
+                            : () => context.pushNamed(AppRoutes.registerName),
                         child: const Text('Regístrate'),
                       ),
                     ],
@@ -178,10 +173,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     child: const Row(
                       children: [
-                        Icon(
-                          Icons.cloud_done,
-                          color: AppColors.primaryGreen,
-                        ),
+                        Icon(Icons.cloud_done, color: AppColors.primaryGreen),
                         SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -241,18 +233,14 @@ class _Header extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           alignment: Alignment.center,
-          child: const Icon(
-            Icons.agriculture,
-            color: Colors.white,
-            size: 40,
-          ),
+          child: const Icon(Icons.agriculture, color: Colors.white, size: 40),
         ),
         const SizedBox(height: 24),
         Text(
           'Bienvenido agricultor',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 6),
         const Text(

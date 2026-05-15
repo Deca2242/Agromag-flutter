@@ -101,23 +101,20 @@ class _TerrainCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _CardTitle(
-              icon: Icons.terrain, label: 'Detalles del Terreno'),
+          const _CardTitle(icon: Icons.terrain, label: 'Detalles del Terreno'),
           const SizedBox(height: 14),
           const _FieldLabel('Área (Hectáreas) *'),
           const SizedBox(height: 6),
           TextFormField(
             controller: areaCtrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
             ],
             decoration: const InputDecoration(hintText: 'Ej: 2.5'),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Ingresa el área.';
-              final parsed =
-                  double.tryParse(v.trim().replaceAll(',', '.'));
+              final parsed = double.tryParse(v.trim().replaceAll(',', '.'));
               if (parsed == null || parsed <= 0) {
                 return 'Ingresa un valor mayor a 0.';
               }
@@ -129,16 +126,15 @@ class _TerrainCard extends StatelessWidget {
           const SizedBox(height: 6),
           DropdownButtonFormField<Municipality>(
             initialValue: municipality,
-            decoration:
-                const InputDecoration(hintText: 'Selecciona un municipio'),
+            decoration: const InputDecoration(
+              hintText: 'Selecciona un municipio',
+            ),
             isExpanded: true,
             items: Municipality.values
-                .map((m) =>
-                    DropdownMenuItem(value: m, child: Text(m.label)))
+                .map((m) => DropdownMenuItem(value: m, child: Text(m.label)))
                 .toList(),
             onChanged: onMunicipalityChanged,
-            validator: (v) =>
-                v == null ? 'Selecciona el municipio.' : null,
+            validator: (v) => v == null ? 'Selecciona el municipio.' : null,
           ),
         ],
       ),

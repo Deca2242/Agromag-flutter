@@ -18,10 +18,13 @@ class WeatherCard extends StatelessWidget {
   final String source;
   final String temperature;
   final String humidity;
+
   /// Si se provee, se muestra un ícono de reintento cuando hay error.
   final VoidCallback? onRetry;
+
   /// Cuándo se obtuvo el dato; si tiene más de 15 min se muestra aviso.
   final DateTime? fetchedAt;
+
   /// Abre detalle del clima (p. ej. pronóstico y gráficos).
   final VoidCallback? onTap;
 
@@ -56,10 +59,9 @@ class WeatherCard extends StatelessWidget {
                   children: [
                     Text(
                       location,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -87,9 +89,7 @@ class WeatherCard extends StatelessWidget {
                       children: [
                         Text(
                           temperature,
-                          style: Theme.of(context)
-                              .textTheme
-                              .displaySmall
+                          style: Theme.of(context).textTheme.displaySmall
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(width: 14),
@@ -147,6 +147,5 @@ class WeatherCard extends StatelessWidget {
     return card;
   }
 
-  static int _minutesAgo(DateTime t) =>
-      DateTime.now().difference(t).inMinutes;
+  static int _minutesAgo(DateTime t) => DateTime.now().difference(t).inMinutes;
 }

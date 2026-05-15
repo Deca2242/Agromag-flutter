@@ -35,8 +35,7 @@ class PlanExpansionTile extends StatelessWidget {
           splashColor: Colors.transparent,
         ),
         child: ExpansionTile(
-          tilePadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: Container(
             width: 36,
             height: 36,
@@ -51,10 +50,7 @@ class PlanExpansionTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
               if (subtitle != null && subtitle!.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(

@@ -12,8 +12,8 @@ import '../../domain/models/weather.dart';
 ///   4. Si tampoco hay cache SQLite → relanza la excepción.
 class WeatherRepository {
   WeatherRepository({required OpenMeteoApi api, required WeatherLocalDao dao})
-      : _api = api,
-        _dao = dao;
+    : _api = api,
+      _dao = dao;
 
   final OpenMeteoApi _api;
   final WeatherLocalDao _dao;

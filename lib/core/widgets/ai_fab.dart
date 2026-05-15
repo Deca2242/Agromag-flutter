@@ -24,10 +24,7 @@ class AiFab extends StatelessWidget {
           shape: const CircleBorder(),
           child: const Text(
             'IA',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
           ),
         ),
       ),

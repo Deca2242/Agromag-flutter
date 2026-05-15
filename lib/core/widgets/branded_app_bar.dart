@@ -20,10 +20,13 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showOfflineIcon;
   final bool online;
   final Widget? leading;
+
   /// Número de elementos pendientes de sincronizar (badge).
   final int pendingCount;
+
   /// Mientras el coordinador ejecuta [requestSync].
   final bool isSyncing;
+
   /// Sincronización manual; si es null no se muestra el botón de sync.
   final VoidCallback? onSyncTap;
 
@@ -38,7 +41,8 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       titleSpacing: 16,
       leadingWidth: leading == null && showMenu ? 56 : null,
-      leading: leading ??
+      leading:
+          leading ??
           (showMenu
               ? IconButton(
                   onPressed: () {},
@@ -71,8 +75,8 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
                 tooltip: isSyncing
                     ? 'Sincronizando…'
                     : pendingCount > 0
-                        ? '$pendingCount pendiente(s). Toca para sincronizar.'
-                        : 'Sincronizar',
+                    ? '$pendingCount pendiente(s). Toca para sincronizar.'
+                    : 'Sincronizar',
                 icon: isSyncing
                     ? const SizedBox(
                         width: 22,

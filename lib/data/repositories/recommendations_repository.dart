@@ -9,8 +9,8 @@ class RecommendationsRepository {
   const RecommendationsRepository({
     required RecommendationsApi api,
     required PendingDecisionsLocalDao decisionsDao,
-  })  : _api = api,
-        _decisionsDao = decisionsDao;
+  }) : _api = api,
+       _decisionsDao = decisionsDao;
 
   final RecommendationsApi _api;
   final PendingDecisionsLocalDao _decisionsDao;
@@ -66,13 +66,12 @@ class RecommendationsRepository {
     String followedFilter = 'any',
     int page = 0,
     int size = 10,
-  }) =>
-      _api.listByCropPaged(
-        cropId,
-        followedFilter: followedFilter,
-        page: page,
-        size: size,
-      );
+  }) => _api.listByCropPaged(
+    cropId,
+    followedFilter: followedFilter,
+    page: page,
+    size: size,
+  );
 
   Future<Recommendation> generateIrrigation(String cropId) =>
       _api.generateIrrigation(cropId);

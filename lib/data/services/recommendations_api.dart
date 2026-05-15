@@ -85,10 +85,7 @@ class RecommendationsApi {
     try {
       await _dio.patch<void>(
         '/api/recommendations/decision',
-        data: {
-          'recommendationId': recommendationId,
-          'followed': followed,
-        },
+        data: {'recommendationId': recommendationId, 'followed': followed},
       );
     } on DioException catch (e) {
       throw e.error ?? const ServerException();

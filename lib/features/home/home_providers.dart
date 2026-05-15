@@ -18,22 +18,22 @@ final recommendationsApiProvider = Provider<RecommendationsApi>(
 /// Retorna lista vacía si no hay red o si el cultivo no tiene recomendaciones.
 final cropRecommendationsProvider =
     FutureProvider.family<List<Recommendation>, String>((ref, cropId) async {
-  try {
-    return await ref
-        .read(recommendationsApiProvider)
-        .listByCrop(cropId);
-  } catch (_) {
-    return [];
-  }
-});
+      try {
+        return await ref.read(recommendationsApiProvider).listByCrop(cropId);
+      } catch (_) {
+        return [];
+      }
+    });
 
 /// Fuerza recarga del historial paginado de decisiones en detalle de cultivo.
-final recommendationHistoryTickProvider =
-    StateProvider.family<int, String>((ref, _) => 0);
+final recommendationHistoryTickProvider = StateProvider.family<int, String>(
+  (ref, _) => 0,
+);
 
 /// Hasta 3 recomendaciones **pendientes** (`followed == null`) entre cultivos (Inicio).
-final dashboardRecommendationsProvider =
-    FutureProvider<List<Recommendation>>((ref) async {
+final dashboardRecommendationsProvider = FutureProvider<List<Recommendation>>((
+  ref,
+) async {
   final crops = await ref.watch(cropsProvider.future);
   if (crops.isEmpty) return [];
   final api = ref.read(recommendationsApiProvider);
@@ -66,8 +66,6 @@ final dashboardRecommendationsProvider =
 /// Emite `true` cuando hay al menos una interfaz de red disponible.
 final isOnlineProvider = StreamProvider<bool>((ref) {
   return Connectivity().onConnectivityChanged.map(
-        (results) => results.any(
-          (r) => r != ConnectivityResult.none,
-        ),
-      );
+    (results) => results.any((r) => r != ConnectivityResult.none),
+  );
 });

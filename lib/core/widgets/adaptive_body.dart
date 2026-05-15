@@ -5,11 +5,7 @@ import 'package:flutter/material.dart';
 /// Sigue la skill `flutter-build-responsive-layout`: en pantallas de
 /// tablet/desktop, el contenido no se estira a todo el ancho.
 class AdaptiveBody extends StatelessWidget {
-  const AdaptiveBody({
-    super.key,
-    required this.child,
-    this.maxWidth = 480,
-  });
+  const AdaptiveBody({super.key, required this.child, this.maxWidth = 480});
 
   final Widget child;
   final double maxWidth;

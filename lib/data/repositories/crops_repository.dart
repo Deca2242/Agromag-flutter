@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../../core/errors/error_handling.dart';
 import '../../core/network/api_exceptions.dart';
+import '../services/crop_sync_conflict.dart';
 import '../services/crops_api.dart';
 import '../services/crops_local_dao.dart';
 import '../services/sync_api.dart';
@@ -16,6 +17,12 @@ class SyncReport {
   final int failed;
 }
 
+class PullCropsResult {
+  const PullCropsResult({required this.success, required this.conflicts});
+  final bool success;
+  final List<CropSyncConflict> conflicts;
+}
+
 /// Orquesta cultivos entre SQLite local y el backend Spring.
 ///
 /// Estrategia offline-first:
@@ -28,9 +35,9 @@ class CropsRepository {
     required CropsLocalDao dao,
     required CropsApi api,
     required SyncApi syncApi,
-  })  : _dao = dao,
-        _api = api,
-        _syncApi = syncApi;
+  }) : _dao = dao,
+       _api = api,
+       _syncApi = syncApi;
 
   final CropsLocalDao _dao;
   final CropsApi _api;
@@ -98,19 +105,24 @@ class CropsRepository {
 
   /// Descarga los cultivos del servidor y los upserta en SQLite.
   ///
-  /// Retorna `true` si la descarga tuvo éxito (sync manual / pull).
-  Future<bool> pullCropsFromServer({required String profileId}) async {
+  /// Retorna [PullCropsResult] con éxito y lista de conflictos detectados.
+  Future<PullCropsResult> pullCropsFromServer({
+    required String profileId,
+  }) async {
     try {
       final remote = await _api.list();
-      await _dao.upsertFromServer(remote, profileId: profileId);
-      return true;
+      final conflicts = await _dao.upsertFromServer(
+        remote,
+        profileId: profileId,
+      );
+      return PullCropsResult(success: true, conflicts: conflicts);
     } catch (error, stackTrace) {
       AppErrorHandling.report(
         'crops_refresh_from_server_failed profileId=$profileId',
         error,
         stackTrace,
       );
-      return false;
+      return PullCropsResult(success: false, conflicts: const []);
     }
   }
 
@@ -217,15 +229,17 @@ class CropsRepository {
     final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    final hex =
-        bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
         '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
         '${hex.substring(20)}';
   }
 
   /// Une listas por `id` sin duplicados (prioriza el orden del primer iterable).
-  static List<Crop> _unionCropsById(Iterable<Crop> first, Iterable<Crop> second) {
+  static List<Crop> _unionCropsById(
+    Iterable<Crop> first,
+    Iterable<Crop> second,
+  ) {
     final seen = <String>{};
     final out = <Crop>[];
     for (final c in first) {

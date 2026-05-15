@@ -33,10 +33,7 @@ class _AuthInterceptor extends Interceptor {
   final Dio _dio;
 
   @override
-  void onRequest(
-    RequestOptions options,
-    RequestInterceptorHandler handler,
-  ) {
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final session = Supabase.instance.client.auth.currentSession;
     if (session != null) {
       options.headers['Authorization'] = 'Bearer ${session.accessToken}';
@@ -51,8 +48,7 @@ class _AuthInterceptor extends Interceptor {
   ) async {
     if (err.response?.statusCode == 401) {
       try {
-        final refreshed =
-            await Supabase.instance.client.auth.refreshSession();
+        final refreshed = await Supabase.instance.client.auth.refreshSession();
         final newToken = refreshed.session?.accessToken;
         if (newToken != null) {
           final opts = err.requestOptions
@@ -90,8 +86,8 @@ class _ErrorInterceptor extends Interceptor {
       401 => const UnauthorizedException(),
       404 => const NotFoundException(),
       400 || 422 => ValidationException(
-          _extractMessage(err.response?.data) ?? 'Datos inválidos.',
-        ),
+        _extractMessage(err.response?.data) ?? 'Datos inválidos.',
+      ),
       _ => const ServerException(),
     };
 

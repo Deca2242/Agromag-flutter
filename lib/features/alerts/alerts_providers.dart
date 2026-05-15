@@ -6,8 +6,7 @@ import '../../domain/models/alert.dart';
 final alertsProvider = Provider<List<Alert>>((ref) => kMockAlerts);
 
 /// Filtro activo en la pantalla de alertas (chips superiores).
-final alertsFilterProvider =
-    StateProvider<AlertCategory?>((ref) => null);
+final alertsFilterProvider = StateProvider<AlertCategory?>((ref) => null);
 
 final filteredAlertsProvider = Provider<List<Alert>>((ref) {
   final all = ref.watch(alertsProvider);

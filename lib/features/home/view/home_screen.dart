@@ -6,6 +6,8 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/branded_app_bar.dart';
+import '../../../core/widgets/offline_banner.dart';
+import '../../../core/widgets/recommendations_skeleton.dart';
 import '../../../domain/models/crop.dart';
 import '../../../domain/models/crop_type.dart';
 import '../../../domain/models/municipality.dart';
@@ -79,9 +81,7 @@ class HomeScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'Hola, $firstName',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
+                      style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                   ),
@@ -99,8 +99,10 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryGreen,
                   borderRadius: BorderRadius.circular(12),
@@ -149,10 +151,9 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               Text(
                 'Mis cultivos',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
               cropsAsync.when(
@@ -166,10 +167,9 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               Text(
                 'Recomendaciones pendientes',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
               cropsAsync.when(
@@ -182,8 +182,7 @@ class HomeScreen extends ConsumerWidget {
                       style: TextStyle(color: AppColors.textSecondary),
                     );
                   }
-                  return _RecommendationsSection(
-                      crops: crops, online: online);
+                  return _RecommendationsSection(crops: crops, online: online);
                 },
               ),
             ],
@@ -195,8 +194,7 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _RecommendationsSection extends ConsumerWidget {
-  const _RecommendationsSection(
-      {required this.crops, required this.online});
+  const _RecommendationsSection({required this.crops, required this.online});
 
   final List<Crop> crops;
   final bool online;
@@ -206,11 +204,7 @@ class _RecommendationsSection extends ConsumerWidget {
     final recsAsync = ref.watch(dashboardRecommendationsProvider);
 
     return recsAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(
-            child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
+      loading: () => const RecommendationsSkeleton(),
       error: (_, _) => const SizedBox.shrink(),
       data: (recs) {
         if (recs.isEmpty) {
@@ -231,15 +225,23 @@ class _RecommendationsSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (!online)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: OfflineBanner(
+                  message:
+                      'Las decisiones se guardarán localmente y se sincronizarán al reconectar.',
+                ),
+              ),
             for (final r in recs) ...[
               RecommendationTile(
                 recommendation: r,
                 cropLabel: _cropLabelFor(r, crops),
                 onOpenCrop: r.cropId != null && r.cropId!.isNotEmpty
                     ? () => context.pushNamed(
-                          AppRoutes.cropsDetailName,
-                          pathParameters: {'id': r.cropId!},
-                        )
+                        AppRoutes.cropsDetailName,
+                        pathParameters: {'id': r.cropId!},
+                      )
                     : null,
               ),
               const SizedBox(height: 12),
@@ -247,9 +249,9 @@ class _RecommendationsSection extends ConsumerWidget {
             if (online)
               Text(
                 'Para generar más recomendaciones, abre un cultivo y usa el botón allí.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               ),
           ],
         );

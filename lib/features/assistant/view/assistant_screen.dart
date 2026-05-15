@@ -62,25 +62,30 @@ class AssistantScreen extends ConsumerWidget {
                   width: double.infinity,
                   color: AppColors.alertRed.withValues(alpha: 0.1),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: const Row(
                     children: [
-                      Icon(Icons.cloud_off,
-                          size: 16, color: AppColors.alertRed),
+                      Icon(
+                        Icons.cloud_off,
+                        size: 16,
+                        color: AppColors.alertRed,
+                      ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'El asistente requiere conexión a internet.',
                           style: TextStyle(
-                              color: AppColors.alertRed, fontSize: 13),
+                            color: AppColors.alertRed,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              Expanded(
-                child: _MessagesList(messages: messages),
-              ),
+              Expanded(child: _MessagesList(messages: messages)),
               ChatInput(
                 enabled: isOnline && !isWaiting,
                 onSend: notifier.sendMessage,

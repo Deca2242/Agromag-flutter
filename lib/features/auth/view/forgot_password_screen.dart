@@ -15,8 +15,7 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
       _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState
-    extends ConsumerState<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
 
@@ -49,9 +48,7 @@ class _ForgotPasswordScreenState
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Te enviamos un enlace para restablecer la contraseña.',
-        ),
+        content: Text('Te enviamos un enlace para restablecer la contraseña.'),
         backgroundColor: AppColors.primaryGreen,
         behavior: SnackBarBehavior.floating,
       ),

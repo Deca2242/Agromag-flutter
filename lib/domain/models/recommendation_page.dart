@@ -21,10 +21,7 @@ class RecommendationPage {
   factory RecommendationPage.fromSpringJson(Map<String, dynamic> json) {
     final raw = json['content'];
     final list = raw is List<dynamic>
-        ? raw
-            .cast<Map<String, dynamic>>()
-            .map(Recommendation.fromJson)
-            .toList()
+        ? raw.cast<Map<String, dynamic>>().map(Recommendation.fromJson).toList()
         : <Recommendation>[];
     int n(dynamic v, int d) {
       if (v == null) return d;

@@ -23,8 +23,9 @@ class ChatBubble extends StatelessWidget {
     );
 
     return Column(
-      crossAxisAlignment:
-          isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: isUser
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         if (!isUser) ...[
           Row(
@@ -53,16 +54,11 @@ class ChatBubble extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 320),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: bubbleColor,
                 borderRadius: radius,
-                border: isUser
-                    ? null
-                    : Border.all(color: AppColors.border),
+                border: isUser ? null : Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,9 +73,7 @@ class ChatBubble extends StatelessWidget {
                     Text(
                       message.text,
                       style: TextStyle(
-                        color: message.isError
-                            ? AppColors.alertRed
-                            : textColor,
+                        color: message.isError ? AppColors.alertRed : textColor,
                         height: 1.35,
                       ),
                     ),
@@ -98,10 +92,7 @@ class ChatBubble extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           message.time,
-          style: const TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
         ),
       ],
     );

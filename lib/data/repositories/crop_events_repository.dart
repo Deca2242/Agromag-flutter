@@ -12,9 +12,9 @@ class CropEventsRepository {
     required CropEventsApi api,
     required CropEventsLocalDao dao,
     required SyncApi syncApi,
-  })  : _api = api,
-        _dao = dao,
-        _syncApi = syncApi;
+  }) : _api = api,
+       _dao = dao,
+       _syncApi = syncApi;
 
   final CropEventsApi _api;
   final CropEventsLocalDao _dao;
@@ -126,7 +126,11 @@ class CropEventsRepository {
       }
       return true;
     } catch (error, stackTrace) {
-      AppErrorHandling.report('crop_events_batch_sync_failed', error, stackTrace);
+      AppErrorHandling.report(
+        'crop_events_batch_sync_failed',
+        error,
+        stackTrace,
+      );
       return false;
     }
   }
@@ -162,8 +166,7 @@ class CropEventsRepository {
     final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    final hex =
-        bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
         '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
         '${hex.substring(20)}';

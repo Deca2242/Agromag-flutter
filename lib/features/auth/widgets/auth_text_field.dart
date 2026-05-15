@@ -62,8 +62,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
             prefixIcon: Icon(widget.icon, color: AppColors.textMuted),
             suffixIcon: widget.obscure
                 ? IconButton(
-                    onPressed: () =>
-                        setState(() => _obscure = !_obscure),
+                    onPressed: () => setState(() => _obscure = !_obscure),
                     tooltip: _obscure
                         ? 'Mostrar contraseña'
                         : 'Ocultar contraseña',

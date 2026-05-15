@@ -33,10 +33,7 @@ class PendingDecisionRecord {
   }
 
   Map<String, dynamic> toSyncJson() {
-    return {
-      'recommendationId': recommendationId,
-      'followed': followed,
-    };
+    return {'recommendationId': recommendationId, 'followed': followed};
   }
 }
 
@@ -56,10 +53,7 @@ class PendingDecisionsLocalDao {
 
   Future<List<PendingDecisionRecord>> listAll() async {
     final db = LocalDb.instance.db;
-    final rows = await db.query(
-      _table,
-      orderBy: 'created_at ASC',
-    );
+    final rows = await db.query(_table, orderBy: 'created_at ASC');
     return rows.map(PendingDecisionRecord.fromRow).toList();
   }
 

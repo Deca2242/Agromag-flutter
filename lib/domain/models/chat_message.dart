@@ -21,16 +21,14 @@ class ChatMessage {
   final String time;
   final String? attachmentTitle;
   final String? attachmentSubtitle;
+
   /// True while waiting for the bot's response.
   final bool isLoading;
+
   /// True when the request failed.
   final bool isError;
 
-  ChatMessage copyWith({
-    String? text,
-    bool? isLoading,
-    bool? isError,
-  }) {
+  ChatMessage copyWith({String? text, bool? isLoading, bool? isError}) {
     return ChatMessage(
       id: id,
       author: author,

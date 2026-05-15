@@ -31,10 +31,7 @@ class ProfileApi {
     try {
       final response = await _dio.put<Map<String, dynamic>>(
         '/api/profile',
-        data: {
-          'fullName': fullName,
-          'municipality': municipality.name,
-        },
+        data: {'fullName': fullName, 'municipality': municipality.name},
       );
       return Profile.fromJson(response.data!);
     } on DioException catch (e) {

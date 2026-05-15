@@ -48,8 +48,7 @@ class CropsListScreen extends ConsumerWidget {
             if (!online) const OfflineBanner(),
             Expanded(
               child: cropsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -63,8 +62,7 @@ class CropsListScreen extends ConsumerWidget {
                       Text(
                         'Error al cargar cultivos:\n$e',
                         textAlign: TextAlign.center,
-                        style:
-                            const TextStyle(color: AppColors.textSecondary),
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: 16),
                       TextButton.icon(
@@ -110,16 +108,15 @@ class CropsListScreen extends ConsumerWidget {
                     final isWide = constraints.maxWidth > 600;
                     if (isWide) {
                       return GridView.builder(
-                        padding:
-                            const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                         itemCount: crops.length,
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 400,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          mainAxisExtent: 180,
-                        ),
+                              maxCrossAxisExtent: 400,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              mainAxisExtent: 180,
+                            ),
                         itemBuilder: (_, i) => CropListCard(
                           crop: crops[i],
                           onRetrySync: retrySync,
@@ -128,28 +125,21 @@ class CropsListScreen extends ConsumerWidget {
                     }
 
                     return ListView(
-                      padding:
-                          const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                       children: [
                         Text(
                           'Mis Cultivos',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
+                          style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           'Gestiona tus plantaciones actuales.',
-                          style:
-                              TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 16),
                         for (final crop in crops) ...[
-                          CropListCard(
-                            crop: crop,
-                            onRetrySync: retrySync,
-                          ),
+                          CropListCard(crop: crop, onRetrySync: retrySync),
                           const SizedBox(height: 12),
                         ],
                       ],

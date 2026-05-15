@@ -27,10 +27,7 @@ class AuthRepository {
       await _client.auth.signUp(
         email: email,
         password: password,
-        data: {
-          'full_name': fullName,
-          'municipality': municipality.name,
-        },
+        data: {'full_name': fullName, 'municipality': municipality.name},
       );
     } on AuthException {
       rethrow;
@@ -40,15 +37,9 @@ class AuthRepository {
   }
 
   /// Inicia sesión con email y contraseña.
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     try {
-      await _client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      await _client.auth.signInWithPassword(email: email, password: password);
     } on AuthException {
       rethrow;
     } catch (e) {
@@ -77,8 +68,7 @@ class AuthRepository {
   }
 
   /// Stream de cambios de sesión (signin, signout, token refresh, etc.).
-  Stream<AuthState> get authStateChanges =>
-      _client.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
   /// Sesión actual (puede ser null si no está autenticado).
   Session? get currentSession => _client.auth.currentSession;

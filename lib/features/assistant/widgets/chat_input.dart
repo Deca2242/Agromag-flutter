@@ -44,9 +44,7 @@ class _ChatInputState extends State<ChatInput> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: widget.enabled
-                      ? AppColors.surface
-                      : AppColors.divider,
+                  color: widget.enabled ? AppColors.surface : AppColors.divider,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: AppColors.border),
                 ),

@@ -37,8 +37,7 @@ final cropsProvider = FutureProvider<List<Crop>>((ref) async {
 
 // ── Cultivo individual ─────────────────────────────────────────────────────
 
-final cropByIdProvider =
-    FutureProvider.family<Crop?, String>((ref, id) async {
+final cropByIdProvider = FutureProvider.family<Crop?, String>((ref, id) async {
   final cropsAsync = ref.watch(cropsProvider);
   final crops = cropsAsync.value;
   if (crops != null) {
@@ -61,21 +60,23 @@ final cropEventsRepositoryProvider = Provider<CropEventsRepository>((ref) {
   );
 });
 
-final cropEventsProvider =
-    FutureProvider.family<List<CropEvent>, String>((ref, cropId) async {
+final cropEventsProvider = FutureProvider.family<List<CropEvent>, String>((
+  ref,
+  cropId,
+) async {
   return ref.read(cropEventsRepositoryProvider).getEvents(cropId);
 });
 
 // ── Recomendaciones ────────────────────────────────────────────────────────
 
-final recommendationsRepositoryProvider = Provider<RecommendationsRepository>(
-  (ref) {
-    return RecommendationsRepository(
-      api: RecommendationsApi(),
-      decisionsDao: PendingDecisionsLocalDao(),
-    );
-  },
-);
+final recommendationsRepositoryProvider = Provider<RecommendationsRepository>((
+  ref,
+) {
+  return RecommendationsRepository(
+    api: RecommendationsApi(),
+    decisionsDao: PendingDecisionsLocalDao(),
+  );
+});
 
 /// Pendientes de subir o bajar: cultivos (PENDING/ERROR/delete) + eventos sin
 /// subir + eliminaciones de eventos pendientes + perfil con `pending_update` + decisiones pendientes.
@@ -86,14 +87,18 @@ final pendingSyncCountProvider = FutureProvider<int>((ref) async {
   final cropsPending = await ref
       .read(cropsRepositoryProvider)
       .pendingCount(profileId: profileId);
-  final eventsUnsynced =
-      await ref.read(cropEventsRepositoryProvider).countUnsyncedEvents();
-  final eventDeletesPending =
-      await ref.read(cropEventsRepositoryProvider).countPendingDeletes();
-  final profilePending =
-      await ref.read(profileRepositoryProvider).hasPendingProfileUpdate();
-  final decisionsPending =
-      await ref.read(recommendationsRepositoryProvider).countPendingDecisions();
+  final eventsUnsynced = await ref
+      .read(cropEventsRepositoryProvider)
+      .countUnsyncedEvents();
+  final eventDeletesPending = await ref
+      .read(cropEventsRepositoryProvider)
+      .countPendingDeletes();
+  final profilePending = await ref
+      .read(profileRepositoryProvider)
+      .hasPendingProfileUpdate();
+  final decisionsPending = await ref
+      .read(recommendationsRepositoryProvider)
+      .countPendingDecisions();
   return cropsPending +
       eventsUnsynced +
       eventDeletesPending +

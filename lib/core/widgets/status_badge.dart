@@ -16,34 +16,34 @@ class StatusBadge extends StatelessWidget {
   final Color foreground;
 
   const StatusBadge.active({super.key})
-      : label = 'Activo',
-        background = AppColors.primaryGreen,
-        foreground = Colors.white;
+    : label = 'Activo',
+      background = AppColors.primaryGreen,
+      foreground = Colors.white;
 
   const StatusBadge.monitoring({super.key})
-      : label = 'Seguimiento',
-        background = AppColors.softGreenBg,
-        foreground = AppColors.primaryGreenDark;
+    : label = 'Seguimiento',
+      background = AppColors.softGreenBg,
+      foreground = AppColors.primaryGreenDark;
 
   const StatusBadge.harvested({super.key})
-      : label = 'Cosechado',
-        background = AppColors.divider,
-        foreground = AppColors.textSecondary;
+    : label = 'Cosechado',
+      background = AppColors.divider,
+      foreground = AppColors.textSecondary;
 
   const StatusBadge.alert({super.key})
-      : label = 'ALERTA',
-        background = AppColors.alertRedSoft,
-        foreground = AppColors.alertRed;
+    : label = 'ALERTA',
+      background = AppColors.alertRedSoft,
+      foreground = AppColors.alertRed;
 
   const StatusBadge.moderate({super.key})
-      : label = 'MODERADO',
-        background = AppColors.warningAmberSoft,
-        foreground = AppColors.warningAmberText;
+    : label = 'MODERADO',
+      background = AppColors.warningAmberSoft,
+      foreground = AppColors.warningAmberText;
 
   const StatusBadge.optimal({super.key})
-      : label = 'ÓPTIMO',
-        background = AppColors.softGreenBg,
-        foreground = AppColors.primaryGreenDark;
+    : label = 'ÓPTIMO',
+      background = AppColors.softGreenBg,
+      foreground = AppColors.primaryGreenDark;
 
   @override
   Widget build(BuildContext context) {

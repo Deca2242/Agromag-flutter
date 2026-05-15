@@ -98,11 +98,7 @@ class CropEventsLocalDao {
   }
 
   Future<void> deleteLocal(String id) async {
-    await LocalDb.instance.db.delete(
-      _table,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await LocalDb.instance.db.delete(_table, where: 'id = ?', whereArgs: [id]);
   }
 
   Future<int> countPendingDeletes() async {
@@ -118,15 +114,21 @@ class CropEventsLocalDao {
     final db = LocalDb.instance.db;
     final batch = db.batch();
     for (final e in events) {
-      batch.insert(_table, _toRow(e),
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      batch.insert(
+        _table,
+        _toRow(e),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
     await batch.commit(noResult: true);
   }
 
   Future<void> deleteAllForCrop(String cropId) async {
-    await LocalDb.instance.db
-        .delete(_table, where: 'crop_id = ?', whereArgs: [cropId]);
+    await LocalDb.instance.db.delete(
+      _table,
+      where: 'crop_id = ?',
+      whereArgs: [cropId],
+    );
   }
 
   /// Marca todos los eventos de un cultivo como pending_delete

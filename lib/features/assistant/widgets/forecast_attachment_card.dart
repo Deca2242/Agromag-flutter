@@ -23,10 +23,7 @@ class ForecastAttachmentCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.cloud_outlined,
-            color: AppColors.textSecondary,
-          ),
+          const Icon(Icons.cloud_outlined, color: AppColors.textSecondary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

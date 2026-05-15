@@ -48,7 +48,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Splash: siempre pasa, decide sola.
       if (loc == AppRoutes.splash) return null;
 
-      final goingToAuth = loc == AppRoutes.login ||
+      final goingToAuth =
+          loc == AppRoutes.login ||
           loc == AppRoutes.register ||
           loc == AppRoutes.forgotPassword;
 
@@ -139,8 +140,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         name: AppRoutes.cropsEditName,
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) {
-                          final crop =
-                              state.extra as dynamic;
+                          final crop = state.extra as dynamic;
                           return EditCropScreen(crop: crop);
                         },
                       ),

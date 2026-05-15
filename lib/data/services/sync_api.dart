@@ -50,23 +50,20 @@ class SyncApi {
       final data = response.data!;
       final syncedCrops = (data['syncedCrops'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
-      final cropIds = syncedCrops
-          .map((c) => c['id'] as String)
-          .toList();
+      final cropIds = syncedCrops.map((c) => c['id'] as String).toList();
       final syncedEvents = (data['syncedEvents'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
-      final eventIds = syncedEvents
-          .map((e) => e['id'] as String)
-          .toList();
+      final eventIds = syncedEvents.map((e) => e['id'] as String).toList();
       final failedCropIds = (data['failedCropIds'] as List<dynamic>? ?? [])
           .map((e) => e as String)
           .toList();
       final failedEventIds = (data['failedEventIds'] as List<dynamic>? ?? [])
           .map((e) => e as String)
           .toList();
-      final failedDecisionIds = (data['failedDecisionIds'] as List<dynamic>? ?? [])
-          .map((e) => e as String)
-          .toList();
+      final failedDecisionIds =
+          (data['failedDecisionIds'] as List<dynamic>? ?? [])
+              .map((e) => e as String)
+              .toList();
       return SyncBatchResult(
         status: data['status'] as String,
         syncedCropIds: cropIds,

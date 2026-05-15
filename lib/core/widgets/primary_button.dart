@@ -23,16 +23,8 @@ class PrimaryButton extends StatelessWidget {
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (icon != null) ...[
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
-        ],
-        Flexible(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
+        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
       ],
     );
 
@@ -74,10 +66,7 @@ class DangerButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 20),
-            const SizedBox(width: 8),
-          ],
+          if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
           Text(label),
         ],
       ),

@@ -6,9 +6,7 @@ List<Recommendation> activeByType(
   RecommendationType type, {
   int maxItems = 5,
 }) {
-  final list = all
-      .where((r) => r.type == type && r.followed == null)
-      .toList();
+  final list = all.where((r) => r.type == type && r.followed == null).toList();
   list.sort((a, b) {
     final da = a.generatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     final db = b.generatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);

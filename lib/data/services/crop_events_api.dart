@@ -12,13 +12,11 @@ class CropEventsApi {
 
   Future<List<CropEvent>> list(String cropId) async {
     try {
-      final response = await _dio
-          .get<List<dynamic>>('/api/crops/$cropId/events');
+      final response = await _dio.get<List<dynamic>>(
+        '/api/crops/$cropId/events',
+      );
       final data = response.data ?? [];
-      return data
-          .cast<Map<String, dynamic>>()
-          .map(CropEvent.fromJson)
-          .toList();
+      return data.cast<Map<String, dynamic>>().map(CropEvent.fromJson).toList();
     } on DioException catch (e) {
       throw e.error ?? const ServerException();
     }
@@ -38,9 +36,7 @@ class CropEventsApi {
 
   Future<void> delete(String cropId, String eventId) async {
     try {
-      await _dio.delete<void>(
-        '/api/crops/$cropId/events/$eventId',
-      );
+      await _dio.delete<void>('/api/crops/$cropId/events/$eventId');
     } on DioException catch (e) {
       throw e.error ?? const ServerException();
     }

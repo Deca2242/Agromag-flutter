@@ -53,7 +53,9 @@ class _NewCropScreenState extends ConsumerState<NewCropScreen> {
       final session = ref.read(authSessionProvider).value;
       if (session == null) throw Exception('Sin sesión');
 
-      final crop = await ref.read(cropsRepositoryProvider).createCropOffline(
+      final crop = await ref
+          .read(cropsRepositoryProvider)
+          .createCropOffline(
             profileId: session.user.id,
             cropType: _cropType!,
             areaHectares: double.parse(_areaCtrl.text.replaceAll(',', '.')),
@@ -142,10 +144,9 @@ class _NewCropScreenState extends ConsumerState<NewCropScreen> {
               children: [
                 Text(
                   'Nuevo Cultivo',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
@@ -237,12 +238,11 @@ class _IdentificationCard extends StatelessWidget {
             initialValue: cropType,
             decoration: const InputDecoration(hintText: 'Selecciona un tipo'),
             items: CropType.values
-                .map(
-                  (t) => DropdownMenuItem(value: t, child: Text(t.label)),
-                )
+                .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
                 .toList(),
             onChanged: onCropTypeChanged,
-            validator: (v) => v == null ? 'Selecciona el tipo de cultivo.' : null,
+            validator: (v) =>
+                v == null ? 'Selecciona el tipo de cultivo.' : null,
           ),
         ],
       ),
@@ -273,8 +273,7 @@ class _TerrainCard extends StatelessWidget {
           const SizedBox(height: 6),
           TextFormField(
             controller: areaCtrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
             ],
@@ -283,8 +282,7 @@ class _TerrainCard extends StatelessWidget {
               if (v == null || v.trim().isEmpty) {
                 return 'Ingresa el área.';
               }
-              final parsed =
-                  double.tryParse(v.trim().replaceAll(',', '.'));
+              final parsed = double.tryParse(v.trim().replaceAll(',', '.'));
               if (parsed == null || parsed <= 0) {
                 return 'Ingresa un valor mayor a 0.';
               }
@@ -296,13 +294,12 @@ class _TerrainCard extends StatelessWidget {
           const SizedBox(height: 6),
           DropdownButtonFormField<Municipality>(
             initialValue: municipality,
-            decoration: const InputDecoration(hintText: 'Selecciona un municipio'),
+            decoration: const InputDecoration(
+              hintText: 'Selecciona un municipio',
+            ),
             isExpanded: true,
             items: Municipality.values
-                .map(
-                  (m) =>
-                      DropdownMenuItem(value: m, child: Text(m.label)),
-                )
+                .map((m) => DropdownMenuItem(value: m, child: Text(m.label)))
                 .toList(),
             onChanged: onMunicipalityChanged,
             validator: (v) => v == null ? 'Selecciona el municipio.' : null,
@@ -314,10 +311,7 @@ class _TerrainCard extends StatelessWidget {
 }
 
 class _DateCard extends StatelessWidget {
-  const _DateCard({
-    required this.sownDate,
-    required this.onDateChanged,
-  });
+  const _DateCard({required this.sownDate, required this.onDateChanged});
 
   final DateTime? sownDate;
   final ValueChanged<DateTime> onDateChanged;
@@ -354,8 +348,7 @@ class _DateCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: InputDecorator(
               decoration: InputDecoration(
-                errorText:
-                    sownDate == null ? null : null, // validator manual
+                errorText: sownDate == null ? null : null, // validator manual
               ),
               child: Row(
                 children: [
@@ -397,10 +390,7 @@ class _Title extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
         ),
       ],
     );
@@ -415,10 +405,7 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        fontWeight: FontWeight.w600,
-        fontSize: 14,
-      ),
+      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
     );
   }
 }

@@ -18,18 +18,16 @@ final authRepositoryProvider = Provider<AuthRepository>(
 );
 
 final profileRepositoryProvider = Provider<ProfileRepository>(
-  (_) => const ProfileRepository(
-    api: ProfileApi(),
-    dao: ProfileLocalDao(),
-  ),
+  (_) => const ProfileRepository(api: ProfileApi(), dao: ProfileLocalDao()),
 );
 
 // ── Estado de sesión ────────────────────────────────────────────────────────
 
 /// Emite la sesión actual cada vez que cambia (login, logout, refresh).
 final authSessionProvider = StreamProvider<Session?>((ref) {
-  return Supabase.instance.client.auth.onAuthStateChange
-      .map((event) => event.session);
+  return Supabase.instance.client.auth.onAuthStateChange.map(
+    (event) => event.session,
+  );
 });
 
 // ── Perfil del usuario actual ───────────────────────────────────────────────
@@ -45,14 +43,13 @@ final currentProfileProvider = FutureProvider<Profile?>((ref) async {
   final profileRepo = ref.read(profileRepositoryProvider);
 
   // 1. Devuelve caché inmediatamente para que la UI no espere.
-  final cached = await profileRepo.getCachedProfile(
-    userId: session.user.id,
-  );
+  final cached = await profileRepo.getCachedProfile(userId: session.user.id);
   if (cached != null) {
     // Sincroniza en segundo plano sin bloquear.
-    profileRepo.bootstrapAfterSignIn().then(
-      (updated) => ref.invalidateSelf(),
-    ).ignore();
+    profileRepo
+        .bootstrapAfterSignIn()
+        .then((updated) => ref.invalidateSelf())
+        .ignore();
     return cached;
   }
 
@@ -93,10 +90,7 @@ class AuthController extends AsyncNotifier<void> {
 
   AuthRepository get _auth => ref.read(authRepositoryProvider);
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => _auth.signIn(email: email, password: password),
@@ -169,5 +163,6 @@ class AuthController extends AsyncNotifier<void> {
   }
 }
 
-final authControllerProvider =
-    AsyncNotifierProvider<AuthController, void>(AuthController.new);
+final authControllerProvider = AsyncNotifierProvider<AuthController, void>(
+  AuthController.new,
+);

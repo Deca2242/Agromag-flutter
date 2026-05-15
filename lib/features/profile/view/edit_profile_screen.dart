@@ -43,15 +43,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_municipality == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona tu municipio.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Selecciona tu municipio.')));
       return;
     }
 
     setState(() => _saving = true);
     try {
-      await ref.read(profileRepositoryProvider).updateProfile(
+      await ref
+          .read(profileRepositoryProvider)
+          .updateProfile(
             fullName: _nameCtrl.text.trim(),
             municipality: _municipality!,
           );
@@ -59,8 +61,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
 
       if (mounted) {
-        final isOnline =
-            ref.read(isOnlineProvider).value ?? false;
+        final isOnline = ref.read(isOnlineProvider).value ?? false;
         final msg = isOnline
             ? 'Datos actualizados.'
             : 'Guardado localmente. Se sincronizará cuando vuelva la conexión.';
@@ -124,15 +125,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         child: AdaptiveBody(
           child: profileAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => const Center(
-              child: Text('No se pudo cargar el perfil.'),
-            ),
+            error: (_, _) =>
+                const Center(child: Text('No se pudo cargar el perfil.')),
             data: (_) => _EditForm(
               formKey: _formKey,
               nameCtrl: _nameCtrl,
               municipality: _municipality,
-              onMunicipalityChanged: (v) =>
-                  setState(() => _municipality = v),
+              onMunicipalityChanged: (v) => setState(() => _municipality = v),
               saving: _saving,
               onSave: _save,
               email: ref.read(currentProfileProvider).value?.email ?? '',
@@ -175,10 +174,9 @@ class _EditForm extends StatelessWidget {
         children: [
           Text(
             'Editar datos personales',
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           const Text(
@@ -227,9 +225,7 @@ class _EditForm extends StatelessWidget {
             isExpanded: true,
             decoration: const InputDecoration(hintText: 'Seleccionar…'),
             items: Municipality.values
-                .map(
-                  (m) => DropdownMenuItem(value: m, child: Text(m.label)),
-                )
+                .map((m) => DropdownMenuItem(value: m, child: Text(m.label)))
                 .toList(),
             onChanged: onMunicipalityChanged,
             validator: (v) => v == null ? 'Selecciona tu municipio.' : null,

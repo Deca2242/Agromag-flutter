@@ -10,23 +10,21 @@ class AssistantApi {
 
   Dio get _dio => ApiClient.instance.dio;
 
-  Future<String> sendMessage(
-      String message, List<ChatMessage> history) async {
+  Future<String> sendMessage(String message, List<ChatMessage> history) async {
     try {
       final historyJson = history
           .where((m) => !m.isLoading)
-          .map((m) => {
-                'role': m.author == ChatAuthor.bot ? 'assistant' : 'user',
-                'content': m.text,
-              })
+          .map(
+            (m) => {
+              'role': m.author == ChatAuthor.bot ? 'assistant' : 'user',
+              'content': m.text,
+            },
+          )
           .toList();
 
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/assistant/chat',
-        data: {
-          'message': message,
-          'history': historyJson,
-        },
+        data: {'message': message, 'history': historyJson},
       );
       return response.data?['reply'] as String? ?? '';
     } on DioException catch (e) {

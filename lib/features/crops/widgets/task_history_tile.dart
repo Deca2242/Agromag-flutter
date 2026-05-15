@@ -48,10 +48,7 @@ class TaskHistoryTile extends StatelessWidget {
               fontSize: 12,
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 4),
-            trailing!,
-          ],
+          if (trailing != null) ...[const SizedBox(width: 4), trailing!],
         ],
       ),
     );

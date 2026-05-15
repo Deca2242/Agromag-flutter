@@ -53,10 +53,7 @@ class ProfileSectionTile extends StatelessWidget {
               ),
             ),
             trailing ??
-                const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textSecondary,
-                ),
+                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -83,10 +80,9 @@ class ProfileSectionGroup extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Text(
             title,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
         ),
         Container(

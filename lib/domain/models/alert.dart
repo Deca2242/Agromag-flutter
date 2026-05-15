@@ -6,11 +6,11 @@ enum AlertSeverity { high, medium, info }
 
 extension AlertCategoryX on AlertCategory {
   String get label => switch (this) {
-        AlertCategory.irrigation => 'Riego',
-        AlertCategory.fertilization => 'Fertilización',
-        AlertCategory.phytosanitary => 'Fitosanitario',
-        AlertCategory.climate => 'Clima',
-      };
+    AlertCategory.irrigation => 'Riego',
+    AlertCategory.fertilization => 'Fertilización',
+    AlertCategory.phytosanitary => 'Fitosanitario',
+    AlertCategory.climate => 'Clima',
+  };
 }
 
 @immutable

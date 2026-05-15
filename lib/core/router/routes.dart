@@ -8,6 +8,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
 
   static const String home = '/home';
+
   /// Segmento bajo `/home` (ruta completa: `/home/weather`).
   static const String homeWeatherSegment = 'weather';
   static const String crops = '/crops';

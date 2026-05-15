@@ -10,10 +10,7 @@ import 'ai_fab.dart';
 /// Shell con la `NavigationBar` inferior que persiste a través de las
 /// 4 pestañas principales. Sigue la skill `flutter-setup-declarative-routing`.
 class ScaffoldWithNavBar extends ConsumerStatefulWidget {
-  const ScaffoldWithNavBar({
-    super.key,
-    required this.navigationShell,
-  });
+  const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
@@ -73,8 +70,10 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar>
           ),
           NavigationDestination(
             icon: Icon(Icons.agriculture_outlined),
-            selectedIcon:
-                Icon(Icons.agriculture, color: AppColors.primaryGreen),
+            selectedIcon: Icon(
+              Icons.agriculture,
+              color: AppColors.primaryGreen,
+            ),
             label: 'Cultivos',
           ),
           NavigationDestination(

@@ -9,7 +9,9 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/brand_logo.dart';
+import '../../../core/widgets/history_skeleton.dart';
 import '../../../core/widgets/offline_banner.dart';
+import '../../../core/widgets/plan_skeleton.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../domain/models/crop.dart';
 import '../../../domain/models/crop_type.dart';
@@ -71,7 +73,9 @@ Future<void> _openRecommendationDecision(
                   ref
                       .read(recommendationHistoryTickProvider(cropId).notifier)
                       .state++;
-                  ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
+                  ref
+                      .read(syncCoordinatorProvider.notifier)
+                      .scheduleDebouncedSync();
                 } catch (_) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -83,9 +87,7 @@ Future<void> _openRecommendationDecision(
                   }
                 }
               },
-              child: Text(
-                online ? 'Realizado' : 'Realizado (offline)',
-              ),
+              child: Text(online ? 'Realizado' : 'Realizado (offline)'),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
@@ -103,7 +105,9 @@ Future<void> _openRecommendationDecision(
                   ref
                       .read(recommendationHistoryTickProvider(cropId).notifier)
                       .state++;
-                  ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
+                  ref
+                      .read(syncCoordinatorProvider.notifier)
+                      .scheduleDebouncedSync();
                 } catch (_) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -115,9 +119,7 @@ Future<void> _openRecommendationDecision(
                   }
                 }
               },
-              child: Text(
-                online ? 'Rechazado' : 'Rechazado (offline)',
-              ),
+              child: Text(online ? 'Rechazado' : 'Rechazado (offline)'),
             ),
           ],
         ),
@@ -137,9 +139,8 @@ class CropDetailScreen extends ConsumerWidget {
     final online = ref.watch(isOnlineProvider).value ?? true;
 
     return cropAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => Scaffold(
         appBar: AppBar(
           leading: IconButton(
@@ -174,7 +175,10 @@ class _DetailContent extends ConsumerWidget {
   final bool online;
 
   Future<void> _confirmDelete(
-      BuildContext context, WidgetRef ref, Crop crop) async {
+    BuildContext context,
+    WidgetRef ref,
+    Crop crop,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -189,8 +193,7 @@ class _DetailContent extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => ctx.pop(true),
-            style: TextButton.styleFrom(
-                foregroundColor: AppColors.alertRed),
+            style: TextButton.styleFrom(foregroundColor: AppColors.alertRed),
             child: const Text('Eliminar'),
           ),
         ],
@@ -264,24 +267,26 @@ class _DetailContent extends ConsumerWidget {
                   children: [
                     _Header(crop: crop),
                     const SizedBox(height: 16),
-                    _ClimateCard(weatherAsync: weatherAsync, crop: crop, ref: ref),
+                    _ClimateCard(
+                      weatherAsync: weatherAsync,
+                      crop: crop,
+                      ref: ref,
+                    ),
                     const SizedBox(height: 24),
                     Text(
                       'Planes Activos',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _CropPlansFromRecommendations(crop: crop, online: online),
                     const SizedBox(height: 24),
                     Text(
                       'Recomendaciones',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
@@ -294,15 +299,13 @@ class _DetailContent extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (online)
-                      GenerateRecommendationsButton(cropId: crop.id),
+                    if (online) GenerateRecommendationsButton(cropId: crop.id),
                     const SizedBox(height: 24),
                     Text(
                       'Historial de decisiones',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _RecommendationDecisionsHistorySection(
@@ -311,10 +314,8 @@ class _DetailContent extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
                     OutlinedButton.icon(
-                      onPressed: () => context.push(
-                        '/crops/${crop.id}/edit',
-                        extra: crop,
-                      ),
+                      onPressed: () =>
+                          context.push('/crops/${crop.id}/edit', extra: crop),
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Editar cultivo'),
                     ),
@@ -385,15 +386,32 @@ class _CropPlansFromRecommendations extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(cropRecommendationsProvider(crop.id));
     return async.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: SizedBox(
-            width: 26,
-            height: 26,
-            child: CircularProgressIndicator(strokeWidth: 2),
+      loading: () => Column(
+        children: [
+          PlanExpansionTile(
+            title: 'Riego',
+            icon: Icons.water_drop,
+            iconColor: AppColors.primaryGreen,
+            iconBackground: AppColors.softGreenBg,
+            children: const [PlanSkeleton(itemCount: 2)],
           ),
-        ),
+          const SizedBox(height: 10),
+          PlanExpansionTile(
+            title: 'Fertilización',
+            icon: Icons.eco,
+            iconColor: const Color(0xFF8A4B00),
+            iconBackground: const Color(0xFFF6E7D7),
+            children: const [PlanSkeleton(itemCount: 2)],
+          ),
+          const SizedBox(height: 10),
+          PlanExpansionTile(
+            title: 'Fitosanitario',
+            icon: Icons.bug_report,
+            iconColor: AppColors.alertRed,
+            iconBackground: AppColors.alertRedSoft,
+            children: const [PlanSkeleton(itemCount: 2)],
+          ),
+        ],
       ),
       error: (_, _) => const Padding(
         padding: EdgeInsets.all(12),
@@ -410,7 +428,8 @@ class _CropPlansFromRecommendations extends ConsumerWidget {
               icon: Icons.water_drop,
               iconColor: AppColors.primaryGreen,
               iconBackground: AppColors.softGreenBg,
-              subtitle: activeByType(recs, RecommendationType.irrigation).isEmpty
+              subtitle:
+                  activeByType(recs, RecommendationType.irrigation).isEmpty
                   ? null
                   : 'Recomendaciones activas',
               children: _tilesForType(
@@ -426,7 +445,8 @@ class _CropPlansFromRecommendations extends ConsumerWidget {
               icon: Icons.eco,
               iconColor: const Color(0xFF8A4B00),
               iconBackground: const Color(0xFFF6E7D7),
-              subtitle: activeByType(recs, RecommendationType.fertilizer).isEmpty
+              subtitle:
+                  activeByType(recs, RecommendationType.fertilizer).isEmpty
                   ? null
                   : 'Recomendaciones activas',
               children: _tilesForType(
@@ -444,8 +464,8 @@ class _CropPlansFromRecommendations extends ConsumerWidget {
               iconBackground: AppColors.alertRedSoft,
               subtitle:
                   activeByType(recs, RecommendationType.phytosanitary).isEmpty
-                      ? null
-                      : 'Recomendaciones activas',
+                  ? null
+                  : 'Recomendaciones activas',
               children: _tilesForType(
                 context,
                 ref,
@@ -506,7 +526,9 @@ class _RecommendationDecisionsHistorySectionState
   Future<void> _fetchNext({required bool isInitial}) async {
     final pageNum = isInitial ? 0 : _nextPageToFetch;
     try {
-      final page = await ref.read(recommendationsApiProvider).listByCropPaged(
+      final page = await ref
+          .read(recommendationsApiProvider)
+          .listByCropPaged(
             widget.cropId,
             followedFilter: 'decided',
             page: pageNum,
@@ -593,22 +615,17 @@ class _RecommendationDecisionsHistorySectionState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<int>(
-      recommendationHistoryTickProvider(widget.cropId),
-      (prev, next) {
-        if (prev != null && prev != next) {
-          unawaited(_loadInitial());
-        }
-      },
-    );
+    ref.listen<int>(recommendationHistoryTickProvider(widget.cropId), (
+      prev,
+      next,
+    ) {
+      if (prev != null && prev != next) {
+        unawaited(_loadInitial());
+      }
+    });
 
     if (_loading && _items.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
+      return const HistorySkeleton();
     }
 
     if (_error != null && _items.isEmpty) {
@@ -619,23 +636,44 @@ class _RecommendationDecisionsHistorySectionState
     }
 
     if (_items.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Text(
-          'Aún no registras decisiones sobre recomendaciones.',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!widget.online)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: OfflineBanner(
+                message:
+                    'Las decisiones se guardarán localmente y se sincronizarán al reconectar.',
+              ),
+            ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Text(
+              'Aún no registras decisiones sobre recomendaciones.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (!widget.online)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: OfflineBanner(
+              message:
+                  'Las decisiones se guardarán localmente y se sincronizarán al reconectar.',
+            ),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
@@ -652,9 +690,9 @@ class _RecommendationDecisionsHistorySectionState
                   subtitle:
                       '${_items[i].followed == true ? "Realizado" : "Rechazado"} · '
                       '${_bodyPreview(_items[i].body)}',
-                  when: DateFormat('dd/MM/yyyy HH:mm').format(
-                    _items[i].generatedAt ?? DateTime.now(),
-                  ),
+                  when: DateFormat(
+                    'dd/MM/yyyy HH:mm',
+                  ).format(_items[i].generatedAt ?? DateTime.now()),
                   trailing: widget.online
                       ? PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert, size: 20),
@@ -733,10 +771,9 @@ class _Header extends StatelessWidget {
                   Expanded(
                     child: Text(
                       crop.cropType.label,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   _SyncBadge(status: crop.syncStatus),
@@ -880,20 +917,12 @@ class _ClimateCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.refresh, color: Colors.white),
                   onPressed: () {
-                    ref.invalidate(
-                      currentWeatherProvider(crop.municipality),
-                    );
-                    ref.invalidate(
-                      weatherDataProvider(crop.municipality),
-                    );
+                    ref.invalidate(currentWeatherProvider(crop.municipality));
+                    ref.invalidate(weatherDataProvider(crop.municipality));
                   },
                 )
               else
-                const Icon(
-                  Icons.wb_cloudy,
-                  size: 44,
-                  color: Colors.white,
-                ),
+                const Icon(Icons.wb_cloudy, size: 44, color: Colors.white),
               const SizedBox(height: 12),
               Text(
                 weatherAsync.maybeWhen(
@@ -931,20 +960,20 @@ class _SyncBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (status) {
       SyncStatus.SYNCED => const Icon(
-          Icons.cloud_done_outlined,
-          size: 18,
-          color: AppColors.primaryGreen,
-        ),
+        Icons.cloud_done_outlined,
+        size: 18,
+        color: AppColors.primaryGreen,
+      ),
       SyncStatus.PENDING => const Icon(
-          Icons.cloud_upload_outlined,
-          size: 18,
-          color: AppColors.warningAmber,
-        ),
+        Icons.cloud_upload_outlined,
+        size: 18,
+        color: AppColors.warningAmber,
+      ),
       SyncStatus.ERROR => const Icon(
-          Icons.cloud_off,
-          size: 18,
-          color: AppColors.alertRed,
-        ),
+        Icons.cloud_off,
+        size: 18,
+        color: AppColors.alertRed,
+      ),
     };
   }
 }
