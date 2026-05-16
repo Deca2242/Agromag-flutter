@@ -74,6 +74,19 @@ class AlertsApi {
     }
   }
 
+  /// Marca todas las alertas no leidas como leidas.
+  Future<int> markAllAsRead() async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/alerts/read-all',
+      );
+      final data = response.data!;
+      return (data['updated'] as num).toInt();
+    } on DioException catch (e) {
+      throw e.error ?? const ServerException();
+    }
+  }
+
   /// Elimina una alerta especifica.
   Future<void> deleteAlert(String alertId) async {
     try {

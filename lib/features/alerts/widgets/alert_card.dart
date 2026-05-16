@@ -72,6 +72,131 @@ class AlertCard extends ConsumerWidget {
     );
   }
 
+  String _recommendedAction() {
+    return switch (alert.category) {
+      AlertCategory.irrigation =>
+        'Revisa la humedad del suelo, evita encharcamientos y registra el riego si lo realizas.',
+      AlertCategory.fertilization =>
+        'Valida la etapa del cultivo, revisa si tienes análisis de suelo y registra cualquier aplicación.',
+      AlertCategory.phytosanitary =>
+        'Inspecciona hojas, tallos y frutos. Si ves síntomas, registra una observación y consulta a un técnico local.',
+      AlertCategory.climate =>
+        'Monitorea el cultivo durante el día y registra cambios relevantes en la app.',
+    };
+  }
+
+  void _showDetails(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final p = _palette();
+        return DraggableScrollableSheet(
+          initialChildSize: 0.72,
+          minChildSize: 0.42,
+          maxChildSize: 0.92,
+          builder: (context, controller) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildIcon(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              alert.title,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              alert.timestamp,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _DetailChip(label: alert.severity.label, color: p.side),
+                      _DetailChip(label: alert.category.label, color: AppColors.primaryGreen),
+                      _DetailChip(
+                        label: alert.isRead ? 'Leída' : 'No leída',
+                        color: alert.isRead ? AppColors.textMuted : p.side,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _DetailSection(title: 'Cultivo', body: alert.cropTag),
+                  _DetailSection(title: 'Detalle', body: alert.description),
+                  _DetailSection(title: 'Acción sugerida', body: _recommendedAction()),
+                  const SizedBox(height: 12),
+                  if (!alert.isRead)
+                    FilledButton.icon(
+                      onPressed: () {
+                        ref.read(alertsProvider.notifier).markAsRead(alert.id);
+                        Navigator.of(sheetContext).pop();
+                      },
+                      icon: const Icon(Icons.done_outlined),
+                      label: const Text('Marcar como leída'),
+                    ),
+                  if (alert.cropId != null) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        context.pushNamed(
+                          AppRoutes.cropsDetailName,
+                          pathParameters: {'id': alert.cropId!},
+                        );
+                      },
+                      icon: const Icon(Icons.agriculture_outlined),
+                      label: const Text('Ir al cultivo'),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = _palette();
@@ -182,6 +307,12 @@ class AlertCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: () => _showDetails(context, ref),
+                        icon: const Icon(Icons.info_outline, size: 18),
+                        label: const Text('Más detalle'),
+                      ),
+                      const SizedBox(height: 4),
                       if (alert.cropId != null)
                         InkWell(
                           onTap: () {
@@ -263,6 +394,68 @@ class AlertCard extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailSection extends StatelessWidget {
+  const _DetailSection({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailChip extends StatelessWidget {
+  const _DetailChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

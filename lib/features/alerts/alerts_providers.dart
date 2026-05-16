@@ -9,12 +9,8 @@ class AlertsNotifier extends AsyncNotifier<List<Alert>> {
   @override
   Future<List<Alert>> build() async {
     final api = ref.read(alertsApiProvider);
-    try {
-      final page = await api.getAlerts(page: 0, size: 50);
-      return page.items;
-    } catch (_) {
-      return [];
-    }
+    final page = await api.getAlerts(page: 0, size: 50);
+    return page.items;
   }
 
   Future<void> reload() async {
@@ -39,6 +35,36 @@ class AlertsNotifier extends AsyncNotifier<List<Alert>> {
     } catch (_) {
       state = AsyncData(previous);
     }
+  }
+
+  Future<void> markAsRead(String alertId) async {
+    final previous = state.value;
+    if (previous == null) return;
+
+    final updated = previous
+        .map((a) => a.id == alertId ? a.copyWith(isRead: true) : a)
+        .toList(growable: false);
+    state = AsyncData(updated);
+
+    try {
+      await ref.read(alertsApiProvider).markAsRead(alertId);
+      ref.invalidate(alertsUnreadCountProvider);
+    } catch (_) {
+      state = AsyncData(previous);
+    }
+  }
+
+  Future<int> markAllAsRead() async {
+    final previous = state.value;
+    final api = ref.read(alertsApiProvider);
+    final updatedCount = await api.markAllAsRead();
+    if (previous != null) {
+      state = AsyncData(
+        previous.map((a) => a.copyWith(isRead: true)).toList(growable: false),
+      );
+    }
+    ref.invalidate(alertsUnreadCountProvider);
+    return updatedCount;
   }
 
   Future<int> deleteAllRead() async {

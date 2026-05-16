@@ -19,20 +19,6 @@ class AlertsScreen extends ConsumerStatefulWidget {
 }
 
 class _AlertsScreenState extends ConsumerState<AlertsScreen> {
-  bool _markedAsRead = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_markedAsRead) {
-      final alerts = ref.read(alertsProvider).value;
-      if (alerts != null && alerts.isNotEmpty) {
-        _markedAsRead = true;
-        ref.read(alertsProvider.notifier).markAllVisibleAsRead(alerts);
-      }
-    }
-  }
-
   Future<void> _showClearReadDialog() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -67,6 +53,17 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     }
   }
 
+  Future<void> _markAllAsRead() async {
+    final updated = await ref.read(alertsProvider.notifier).markAllAsRead();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$updated alerta(s) marcada(s) como leída(s)'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(alertsRefreshTickProvider);
@@ -86,12 +83,27 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           Consumer(
             builder: (context, ref, _) {
               final alerts = ref.watch(alertsProvider).value ?? [];
+              final unreadCount = alerts.where((a) => !a.isRead).length;
               final readCount = alerts.where((a) => a.isRead).length;
-              if (readCount == 0) return const SizedBox.shrink();
-              return IconButton(
-                icon: const Icon(Icons.delete_sweep_outlined),
-                tooltip: 'Limpiar alertas leídas',
-                onPressed: _showClearReadDialog,
+              if (readCount == 0 && unreadCount == 0) {
+                return const SizedBox.shrink();
+              }
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (unreadCount > 0)
+                    IconButton(
+                      icon: const Icon(Icons.done_all_outlined),
+                      tooltip: 'Marcar todas como leídas',
+                      onPressed: _markAllAsRead,
+                    ),
+                  if (readCount > 0)
+                    IconButton(
+                      icon: const Icon(Icons.delete_sweep_outlined),
+                      tooltip: 'Limpiar alertas leídas',
+                      onPressed: _showClearReadDialog,
+                    ),
+                ],
               );
             },
           ),

@@ -79,4 +79,19 @@ class Alert {
       isRead: json['isRead'] as bool? ?? false,
     );
   }
+
+  Alert copyWith({bool? isRead}) {
+    return Alert(
+      id: id,
+      title: title,
+      description: description,
+      timestamp: timestamp,
+      category: category,
+      severity: severity,
+      cropTag: cropTag,
+      iconCodePoint: iconCodePoint,
+      cropId: cropId,
+      isRead: isRead ?? this.isRead,
+    );
+  }
 }
