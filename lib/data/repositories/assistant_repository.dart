@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import '../../domain/models/chat_message.dart';
 import '../services/assistant_api.dart';
 
-/// Mantiene el historial de mensajes en memoria y delega al API.
 class AssistantRepository {
   AssistantRepository({required AssistantApi api}) : _api = api;
 
@@ -20,5 +19,12 @@ class AssistantRepository {
       text: reply,
       time: DateFormat('hh:mm a').format(DateTime.now()),
     );
+  }
+
+  Stream<Map<String, dynamic>> sendMessageStream(
+    String text,
+    List<ChatMessage> history,
+  ) {
+    return _api.sendMessageStream(text, history);
   }
 }

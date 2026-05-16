@@ -86,11 +86,16 @@ class CropsRepository {
 
   /// Elimina un cultivo. Online: DELETE en servidor + local. Offline: pending_delete.
   Future<void> deleteCrop(String id) async {
+    await _dao.markDeletedPending(id);
     try {
       await _api.delete(id);
       await _dao.deleteLocal(id);
+    } on NotFoundException {
+      await _dao.deleteLocal(id);
     } on NetworkException {
-      await _dao.markDeletedPending(id);
+      // Se mantiene oculto localmente y se reintentará al reconectar.
+    } catch (_) {
+      await _dao.markError([id]);
     }
   }
 
@@ -206,7 +211,13 @@ class CropsRepository {
         await _api.delete(crop.id);
         await _dao.deleteLocal(crop.id);
         synced++;
+      } on NotFoundException {
+        await _dao.deleteLocal(crop.id);
+        synced++;
+      } on NetworkException {
+        failed++;
       } catch (_) {
+        await _dao.markError([crop.id]);
         failed++;
       }
     }

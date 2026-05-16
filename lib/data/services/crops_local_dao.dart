@@ -111,8 +111,8 @@ class CropsLocalDao {
     final db = LocalDb.instance.db;
     final rows = await db.query(
       _table,
-      where: 'profile_id = ? AND pending_delete = 1',
-      whereArgs: [profileId],
+      where: 'profile_id = ? AND pending_delete = 1 AND sync_status != ?',
+      whereArgs: [profileId, SyncStatus.SYNCED.name],
     );
     return rows.map(_fromRow).toList();
   }
@@ -120,9 +120,14 @@ class CropsLocalDao {
   /// Marks a crop as pending deletion (hides from UI; deletes from server on reconnect).
   Future<void> markDeletedPending(String id) async {
     final db = LocalDb.instance.db;
+    await db.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
     await db.update(
       _table,
-      {'pending_delete': 1, 'updated_at': DateTime.now().toIso8601String()},
+      {
+        'pending_delete': 1,
+        'sync_status': SyncStatus.PENDING.name,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -131,6 +136,7 @@ class CropsLocalDao {
   /// Physically removes a crop row from SQLite.
   Future<void> deleteLocal(String id) async {
     final db = LocalDb.instance.db;
+    await db.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
     await db.delete(_table, where: 'id = ?', whereArgs: [id]);
   }
 
@@ -165,13 +171,24 @@ class CropsLocalDao {
     List<Crop> crops, {
     required String profileId,
   }) async {
-    if (crops.isEmpty) return [];
     final db = LocalDb.instance.db;
 
     final conflicts = <CropSyncConflict>[];
+    final pendingDeleteRows = await db.query(
+      _table,
+      columns: ['id'],
+      where: 'profile_id = ? AND pending_delete = 1',
+      whereArgs: [profileId],
+    );
+    final pendingDeleteIds = pendingDeleteRows
+        .map((row) => row['id'] as String)
+        .toSet();
+    final effectiveRemote = crops
+        .where((crop) => !pendingDeleteIds.contains(crop.id))
+        .toList();
     final serverIds = crops.map((c) => c.id).toSet();
 
-    for (final serverCrop in crops) {
+    for (final serverCrop in effectiveRemote) {
       final existingRows = await db.query(
         _table,
         where: 'id = ?',
@@ -226,7 +243,7 @@ class CropsLocalDao {
     }
 
     final batch = db.batch();
-    for (final crop in crops) {
+    for (final crop in effectiveRemote) {
       batch.insert(
         _table,
         _toRow(crop, profileId, isNewLocal: false),
@@ -242,6 +259,10 @@ class CropsLocalDao {
         .toList();
     if (orphaned.isNotEmpty) {
       final placeholders = orphaned.map((_) => '?').join(', ');
+      await db.rawDelete(
+        'DELETE FROM crop_events WHERE crop_id IN ($placeholders)',
+        orphaned,
+      );
       await db.rawUpdate(
         'UPDATE $_table SET pending_delete = 1, sync_status = ? WHERE id IN ($placeholders) AND is_new_local = 0 AND pending_delete = 0',
         [SyncStatus.SYNCED.name, ...orphaned],

@@ -6,7 +6,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../domain/models/chat_message.dart';
 import '../../../core/widgets/adaptive_body.dart';
 import '../../../core/widgets/brand_logo.dart';
-import '../../home/home_providers.dart';
 import '../assistant_providers.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/chat_input.dart';
@@ -18,8 +17,8 @@ class AssistantScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = ref.watch(chatMessagesProvider);
     final notifier = ref.read(chatMessagesProvider.notifier);
-    final isOnline = ref.watch(isOnlineProvider).value ?? true;
     final isWaiting = notifier.isWaiting;
+    final suggestions = notifier.suggestions;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -57,38 +56,15 @@ class AssistantScreen extends ConsumerWidget {
         child: AdaptiveBody(
           child: Column(
             children: [
-              if (!isOnline)
-                Container(
-                  width: double.infinity,
-                  color: AppColors.alertRed.withValues(alpha: 0.1),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.cloud_off,
-                        size: 16,
-                        color: AppColors.alertRed,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'El asistente requiere conexión a internet.',
-                          style: TextStyle(
-                            color: AppColors.alertRed,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               Expanded(child: _MessagesList(messages: messages)),
+              if (suggestions.isNotEmpty)
+                _SuggestionChips(
+                  suggestions: suggestions,
+                  onTap: notifier.useSuggestion,
+                ),
               ChatInput(
-                enabled: isOnline && !isWaiting,
-                onSend: notifier.sendMessage,
+                enabled: !isWaiting,
+                onSend: notifier.sendStreamMessage,
               ),
             ],
           ),
@@ -143,6 +119,40 @@ class _MessagesListState extends State<_MessagesList> {
       itemBuilder: (context, index) {
         return ChatBubble(message: messages[index]);
       },
+    );
+  }
+}
+
+class _SuggestionChips extends StatelessWidget {
+  const _SuggestionChips({required this.suggestions, required this.onTap});
+
+  final List<String> suggestions;
+  final void Function(String) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      constraints: const BoxConstraints(maxHeight: 60),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: suggestions.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          return FilterChip(
+            label: Text(suggestions[index]),
+            onSelected: (_) => onTap(suggestions[index]),
+            backgroundColor: AppColors.background,
+            selectedColor: AppColors.primaryGreen.withValues(alpha: 0.15),
+            side: BorderSide(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
+            labelStyle: const TextStyle(
+              color: AppColors.primaryGreen,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          );
+        },
+      ),
     );
   }
 }

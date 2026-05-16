@@ -13,6 +13,8 @@ class ChatMessage {
     this.attachmentSubtitle,
     this.isLoading = false,
     this.isError = false,
+    this.isStreaming = false,
+    this.suggestions = const [],
   });
 
   final String id;
@@ -22,13 +24,18 @@ class ChatMessage {
   final String? attachmentTitle;
   final String? attachmentSubtitle;
 
-  /// True while waiting for the bot's response.
   final bool isLoading;
-
-  /// True when the request failed.
   final bool isError;
+  final bool isStreaming;
+  final List<String> suggestions;
 
-  ChatMessage copyWith({String? text, bool? isLoading, bool? isError}) {
+  ChatMessage copyWith({
+    String? text,
+    bool? isLoading,
+    bool? isError,
+    bool? isStreaming,
+    List<String>? suggestions,
+  }) {
     return ChatMessage(
       id: id,
       author: author,
@@ -38,6 +45,8 @@ class ChatMessage {
       attachmentSubtitle: attachmentSubtitle,
       isLoading: isLoading ?? this.isLoading,
       isError: isError ?? this.isError,
+      isStreaming: isStreaming ?? this.isStreaming,
+      suggestions: suggestions ?? this.suggestions,
     );
   }
 }

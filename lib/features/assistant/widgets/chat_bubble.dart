@@ -15,6 +15,7 @@ class ChatBubble extends StatelessWidget {
     final bubbleColor = isUser ? AppColors.primaryGreenDark : Colors.white;
     final textColor = isUser ? Colors.white : AppColors.textPrimary;
     final align = isUser ? Alignment.centerRight : Alignment.centerLeft;
+    final maxBubbleWidth = MediaQuery.sizeOf(context).width * (isUser ? 0.76 : 0.84);
     final radius = BorderRadius.only(
       topLeft: const Radius.circular(16),
       topRight: const Radius.circular(16),
@@ -52,7 +53,7 @@ class ChatBubble extends StatelessWidget {
         Align(
           alignment: align,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
+            constraints: BoxConstraints(maxWidth: maxBubbleWidth),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -69,12 +70,31 @@ class ChatBubble extends StatelessWidget {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
+                  else if (message.isStreaming)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            message.text,
+                            style: TextStyle(
+                              color: message.isError ? AppColors.alertRed : textColor,
+                              height: 1.42,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const _BlinkingCursor(),
+                      ],
+                    )
                   else
                     Text(
                       message.text,
                       style: TextStyle(
                         color: message.isError ? AppColors.alertRed : textColor,
-                        height: 1.35,
+                        height: 1.42,
+                        fontSize: 14,
                       ),
                     ),
                   if (message.attachmentTitle != null) ...[
@@ -95,6 +115,50 @@ class ChatBubble extends StatelessWidget {
           style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
         ),
       ],
+    );
+  }
+}
+
+class _BlinkingCursor extends StatefulWidget {
+  const _BlinkingCursor();
+
+  @override
+  State<_BlinkingCursor> createState() => _BlinkingCursorState();
+}
+
+class _BlinkingCursorState extends State<_BlinkingCursor>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 530),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 1, end: 0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: const Text(
+        '▎',
+        style: TextStyle(
+          color: AppColors.primaryGreen,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
