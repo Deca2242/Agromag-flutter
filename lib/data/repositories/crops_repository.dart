@@ -1,7 +1,10 @@
-import 'dart:math';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 
 import '../../core/errors/error_handling.dart';
 import '../../core/network/api_exceptions.dart';
+import '../../core/utils/uuid_generator.dart';
 import '../services/crop_sync_conflict.dart';
 import '../services/crops_api.dart';
 import '../services/crops_local_dao.dart';
@@ -11,12 +14,14 @@ import '../../domain/models/crop_type.dart';
 import '../../domain/models/municipality.dart';
 import '../../domain/models/sync_status.dart';
 
+@immutable
 class SyncReport {
   const SyncReport({required this.synced, required this.failed});
   final int synced;
   final int failed;
 }
 
+@immutable
 class PullCropsResult {
   const PullCropsResult({required this.success, required this.conflicts});
   final bool success;
@@ -51,7 +56,7 @@ class CropsRepository {
     required Municipality municipality,
     required DateTime sownDate,
   }) async {
-    final id = _generateUuid();
+    final id = generateUuid();
     final now = DateTime.now();
     final crop = Crop(
       id: id,
@@ -99,7 +104,7 @@ class CropsRepository {
       await refreshFromServer(profileId: profileId);
       return _dao.listByProfile(profileId);
     }
-    refreshFromServer(profileId: profileId).ignore();
+    unawaited(refreshFromServer(profileId: profileId));
     return local;
   }
 
@@ -222,17 +227,6 @@ class CropsRepository {
     final errors = await _dao.countErrorByProfile(profileId);
     final deletes = await _dao.pendingDeletesByProfile(profileId);
     return pending.length + errors + deletes.length;
-  }
-
-  static String _generateUuid() {
-    final rng = Random.secure();
-    final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
-        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
-        '${hex.substring(20)}';
   }
 
   /// Une listas por `id` sin duplicados (prioriza el orden del primer iterable).

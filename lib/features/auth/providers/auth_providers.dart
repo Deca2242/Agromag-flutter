@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -46,10 +48,9 @@ final currentProfileProvider = FutureProvider<Profile?>((ref) async {
   final cached = await profileRepo.getCachedProfile(userId: session.user.id);
   if (cached != null) {
     // Sincroniza en segundo plano sin bloquear.
-    profileRepo
-        .bootstrapAfterSignIn()
-        .then((updated) => ref.invalidateSelf())
-        .ignore();
+    unawaited(
+      profileRepo.bootstrapAfterSignIn().then((_) => ref.invalidateSelf()),
+    );
     return cached;
   }
 

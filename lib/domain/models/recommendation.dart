@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
+
 enum RecommendationLevel { moderate, alert, optimal }
 
 extension RecommendationLevelX on RecommendationLevel {
@@ -65,17 +67,17 @@ class Recommendation {
       RecommendationType.irrigation => (
         'Riego',
         Icons.water_drop_outlined.codePoint,
-        const Color(0xFF1565C0),
+        AppColors.infoBlue,
       ),
       RecommendationType.fertilizer => (
         'Fertilización',
         Icons.eco_outlined.codePoint,
-        const Color(0xFF8A4B00),
+        AppColors.warningBrown,
       ),
       RecommendationType.phytosanitary => (
         'Fitosanitario',
         Icons.bug_report_outlined.codePoint,
-        const Color(0xFFD32F2F),
+        AppColors.alertRedStrong,
       ),
     };
     final followedRaw = json['followed'];

@@ -128,7 +128,7 @@ class _HeaderCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1B3D2F), Color(0xFF2D5A44)],
+          colors: [AppColors.darkGreenDeep, AppColors.darkGreenMedium],
         ),
         borderRadius: BorderRadius.circular(24),
       ),

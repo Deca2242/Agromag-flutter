@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'brand_logo.dart';
 
-/// AppBar con el branding "AgroMagdalena" + indicador de conectividad.
+/// AppBar con el branding "Agromag" + indicador de conectividad.
 class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
   const BrandedAppBar({
     super.key,
@@ -14,6 +14,7 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.pendingCount = 0,
     this.isSyncing = false,
     this.onSyncTap,
+    this.actions,
   });
 
   final bool showMenu;
@@ -29,6 +30,9 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Sincronización manual; si es null no se muestra el botón de sync.
   final VoidCallback? onSyncTap;
+
+  /// Widgets adicionales al final del AppBar (antes de los iconos de sync/red).
+  final List<Widget>? actions;
 
   @override
   Size get preferredSize => const Size.fromHeight(56);
@@ -51,21 +55,27 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
                   color: AppColors.textPrimary,
                 )
               : null),
-      title: const Row(
-        children: [
-          BrandLogo(size: 28),
-          SizedBox(width: 8),
-          Text(
-            'AgroMagdalena',
-            style: TextStyle(
-              color: AppColors.primaryGreen,
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const BrandLogo(size: 28),
+            const SizedBox(width: 8),
+            const Text(
+              'Agromag',
+              style: TextStyle(
+                color: AppColors.primaryGreen,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
+        if (actions != null) ...actions!,
         if (onSyncTap != null)
           Stack(
             clipBehavior: Clip.none,

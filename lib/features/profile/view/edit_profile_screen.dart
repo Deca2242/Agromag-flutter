@@ -110,7 +110,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             BrandLogo(size: 24),
             SizedBox(width: 8),
             Text(
-              'AgroMagdalena',
+              'Agromag',
               style: TextStyle(
                 color: AppColors.primaryGreen,
                 fontWeight: FontWeight.w800,

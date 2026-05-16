@@ -181,7 +181,7 @@ class _ProfileBody extends StatelessWidget {
           children: [
             ProfileSectionTile(
               icon: Icons.info_outline,
-              title: 'Acerca de AgroMagdalena',
+              title: 'Acerca de Agromag',
               onTap: () {},
             ),
             ProfileSectionTile(

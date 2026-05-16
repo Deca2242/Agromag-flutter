@@ -7,7 +7,7 @@ import 'package:app/app.dart';
 void main() {
   testWidgets('App boots without crashing', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: AgroMagdalenaApp()),
+      const ProviderScope(child: AgromagApp()),
     );
     expect(find.byType(MaterialApp), findsOneWidget);
   });

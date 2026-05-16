@@ -32,6 +32,7 @@ enum EventType {
   }
 }
 
+@immutable
 class CropEvent {
   const CropEvent({
     required this.id,

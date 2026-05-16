@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// Tema global de la aplicación AgroMagdalena.
+/// Tema global de la aplicación Agromag.
 class AppTheme {
   const AppTheme._();
 

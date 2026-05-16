@@ -115,7 +115,7 @@ class _NewCropScreenState extends ConsumerState<NewCropScreen> {
             BrandLogo(size: 24),
             SizedBox(width: 8),
             Text(
-              'AgroMagdalena',
+              'Agromag',
               style: TextStyle(
                 color: AppColors.primaryGreen,
                 fontWeight: FontWeight.w800,

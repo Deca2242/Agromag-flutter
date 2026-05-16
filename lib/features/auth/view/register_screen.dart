@@ -107,7 +107,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   const BrandLogo(size: 64),
                   const SizedBox(height: 12),
                   Text(
-                    'AgroMagdalena',
+                    'Agromag',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppColors.primaryGreen,
                       fontWeight: FontWeight.w800,

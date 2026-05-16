@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
+
 import 'recommendation.dart';
 
 /// Respuesta paginada Spring `Page<RecommendationResponse>`.
+@immutable
 class RecommendationPage {
   const RecommendationPage({
     required this.items,

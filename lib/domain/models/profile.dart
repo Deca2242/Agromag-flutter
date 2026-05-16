@@ -82,17 +82,21 @@ class Profile {
   }
 
   Profile copyWith({
+    String? id,
+    String? email,
+    AppRole? role,
     String? fullName,
     Municipality? municipality,
+    DateTime? createdAt,
     DateTime? syncedAt,
   }) {
     return Profile(
-      id: id,
-      email: email,
-      role: role,
+      id: id ?? this.id,
+      email: email ?? this.email,
+      role: role ?? this.role,
       fullName: fullName ?? this.fullName,
       municipality: municipality ?? this.municipality,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
     );
   }

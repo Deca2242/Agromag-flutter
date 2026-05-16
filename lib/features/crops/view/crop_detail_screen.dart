@@ -399,8 +399,8 @@ class _CropPlansFromRecommendations extends ConsumerWidget {
           PlanExpansionTile(
             title: 'Fertilización',
             icon: Icons.eco,
-            iconColor: const Color(0xFF8A4B00),
-            iconBackground: const Color(0xFFF6E7D7),
+            iconColor: AppColors.warningBrown,
+            iconBackground: AppColors.lightBrown,
             children: const [PlanSkeleton(itemCount: 2)],
           ),
           const SizedBox(height: 10),
@@ -443,8 +443,8 @@ class _CropPlansFromRecommendations extends ConsumerWidget {
             PlanExpansionTile(
               title: 'Fertilización',
               icon: Icons.eco,
-              iconColor: const Color(0xFF8A4B00),
-              iconBackground: const Color(0xFFF6E7D7),
+              iconColor: AppColors.warningBrown,
+              iconBackground: AppColors.lightBrown,
               subtitle:
                   activeByType(recs, RecommendationType.fertilizer).isEmpty
                   ? null

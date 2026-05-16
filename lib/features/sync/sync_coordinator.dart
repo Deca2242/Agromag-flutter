@@ -6,16 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/network/api_client.dart';
-import '../../core/network/api_exceptions.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/repositories/crops_repository.dart';
-import '../../data/repositories/recommendations_repository.dart';
 import '../../data/services/crop_sync_conflict.dart';
 import '../../data/services/local_db.dart';
 import '../auth/providers/auth_providers.dart';
 import '../crops/crops_providers.dart';
 import '../home/home_providers.dart';
+import 'widgets/conflict_detail_sheet.dart';
 
 /// Resultado de una pasada completa de sincronización (push + pull).
+@immutable
 class ManualSyncResult {
   const ManualSyncResult({
     required this.profilePushOk,
@@ -27,6 +28,7 @@ class ManualSyncResult {
     required this.pullProfileOk,
     required this.pullEventsOk,
     this.conflicts = const [],
+    this.error,
   });
 
   final bool profilePushOk;
@@ -38,6 +40,7 @@ class ManualSyncResult {
   final bool pullProfileOk;
   final bool pullEventsOk;
   final List<CropSyncConflict> conflicts;
+  final String? error;
 
   bool get isFullSuccess =>
       profilePushOk &&
@@ -50,6 +53,7 @@ class ManualSyncResult {
       pullEventsOk;
 
   String userMessage() {
+    if (error != null) return error!;
     if (!pullCropsOk || !pullProfileOk) {
       return 'No se pudo descargar todo desde el servidor. '
           'Revisa la conexión y API_BASE_URL.';
@@ -97,7 +101,8 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
 
   static const _maxBackoffMs = 30000;
   static const _baseBackoffMs = 1000;
-  static const _networkStabilizeMs = 1500;
+  static const _networkStabilizeMs = 800;
+  static const _maxRetriesPerCycle = 3;
 
   int get _backoffMs {
     if (_consecutiveFailures == 0) return 0;
@@ -147,61 +152,148 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
         _pendingAgain = false;
         _lastSyncResult = null;
 
-        // 1. Esperar sesión activa (máx 15s con verificación directa).
-        final session = await _waitUntilSessionAvailable();
-        if (session == null) continue;
+        debugPrint('[SYNC] Iniciando ciclo de sincronización...');
 
-        // 2. Verificar conectividad real (HTTP ping) — no depender de
-        //    isOnlineProvider que puede tardar en emitir su primer valor.
-        final isActuallyOnline = await _waitUntilOnlineVerified();
-        if (!isActuallyOnline) continue;
+        var cycleSucceeded = false;
+        var retryCount = 0;
 
-        // 3. Backoff exponencial entre intentos fallidos.
-        final backoff = _backoffMs;
-        final timeSinceLastSync = _lastSyncTime != null
-            ? DateTime.now().difference(_lastSyncTime!).inMilliseconds
-            : _maxBackoffMs + 1;
-        if (backoff > 0 && timeSinceLastSync < backoff) {
-          final waitMs = backoff - timeSinceLastSync;
-          await Future<void>.delayed(Duration(milliseconds: waitMs));
-        }
-
-        await Future<void>.delayed(
-          const Duration(milliseconds: _networkStabilizeMs),
-        );
-
-        // 4. Doble verificación antes de ejecutar.
-        final stillOnline = await _verifyConnectivity();
-        if (!stillOnline) {
-          _consecutiveFailures++;
-          continue;
-        }
-
-        state = true;
-        try {
-          _lastSyncResult = await _runFullSync(profileId: session.user.id);
-          if (_lastSyncResult!.isFullSuccess) {
-            _consecutiveFailures = 0;
-            await LocalDb.instance.purgeOldSyncedData();
-          } else {
-            _consecutiveFailures++;
+        while (retryCount < _maxRetriesPerCycle && !cycleSucceeded) {
+          if (retryCount > 0) {
+            debugPrint('[SYNC] Reintento $retryCount de $_maxRetriesPerCycle...');
           }
-          _lastSyncTime = DateTime.now();
-        } finally {
-          state = false;
+
+          // 1. Verificar sesión activa (máx 5s).
+          final session = await _waitUntilSessionAvailable();
+          if (session == null) {
+            debugPrint('[SYNC] No hay sesión activa.');
+            _lastSyncResult = ManualSyncResult(
+              profilePushOk: false,
+              cropsReport: const SyncReport(synced: 0, failed: 0),
+              eventsPushOk: false,
+              eventsDeletesOk: false,
+              decisionsPushOk: false,
+              pullCropsOk: false,
+              pullProfileOk: false,
+              pullEventsOk: false,
+              error: 'No hay sesión activa. Inicia sesión de nuevo.',
+            );
+            retryCount++;
+            await Future<void>.delayed(const Duration(seconds: 2));
+            continue;
+          }
+          debugPrint('[SYNC] Sesión obtenida: ${session.user.id}');
+
+          // 2. Verificar conectividad real (HTTP ping).
+          final isActuallyOnline = await _verifyConnectivity();
+          if (!isActuallyOnline) {
+            debugPrint('[SYNC] Sin conectividad con el servidor.');
+            _lastSyncResult = ManualSyncResult(
+              profilePushOk: false,
+              cropsReport: const SyncReport(synced: 0, failed: 0),
+              eventsPushOk: false,
+              eventsDeletesOk: false,
+              decisionsPushOk: false,
+              pullCropsOk: false,
+              pullProfileOk: false,
+              pullEventsOk: false,
+              error: 'No se puede conectar con el servidor. Verifica tu conexión.',
+            );
+            retryCount++;
+            await Future<void>.delayed(const Duration(seconds: 2));
+            continue;
+          }
+          debugPrint('[SYNC] Conectividad verificada.');
+
+          // 3. Backoff exponencial entre intentos fallidos.
+          final backoff = _backoffMs;
+          final timeSinceLastSync = _lastSyncTime != null
+              ? DateTime.now().difference(_lastSyncTime!).inMilliseconds
+              : _maxBackoffMs + 1;
+          if (backoff > 0 && timeSinceLastSync < backoff) {
+            final waitMs = backoff - timeSinceLastSync;
+            debugPrint('[SYNC] Backoff: esperando ${waitMs}ms');
+            await Future<void>.delayed(Duration(milliseconds: waitMs));
+          }
+
+          await Future<void>.delayed(
+            const Duration(milliseconds: _networkStabilizeMs),
+          );
+
+          // 4. Ejecutar sincronización completa.
+          debugPrint('[SYNC] Ejecutando sincronización completa...');
+          state = true;
+          try {
+            _lastSyncResult = await _runFullSync(profileId: session.user.id);
+            if (_lastSyncResult!.isFullSuccess) {
+              _consecutiveFailures = 0;
+              await LocalDb.instance.purgeOldSyncedData();
+              debugPrint('[SYNC] Sincronización exitosa.');
+            } else {
+              _consecutiveFailures++;
+              debugPrint('[SYNC] Sincronización parcial o fallida.');
+            }
+            _lastSyncTime = DateTime.now();
+            cycleSucceeded = true;
+          } catch (e, st) {
+            debugPrint('[SYNC] Error durante la sincronización: $e\n$st');
+            _consecutiveFailures++;
+            _lastSyncResult = ManualSyncResult(
+              profilePushOk: false,
+              cropsReport: const SyncReport(synced: 0, failed: 0),
+              eventsPushOk: false,
+              eventsDeletesOk: false,
+              decisionsPushOk: false,
+              pullCropsOk: false,
+              pullProfileOk: false,
+              pullEventsOk: false,
+              error: 'Error durante la sincronización: $e',
+            );
+            retryCount++;
+            await Future<void>.delayed(const Duration(seconds: 2));
+          } finally {
+            state = false;
+          }
         }
+
+        if (!cycleSucceeded && _lastSyncResult == null) {
+          _lastSyncResult = ManualSyncResult(
+            profilePushOk: false,
+            cropsReport: const SyncReport(synced: 0, failed: 0),
+            eventsPushOk: false,
+            eventsDeletesOk: false,
+            decisionsPushOk: false,
+            pullCropsOk: false,
+            pullProfileOk: false,
+            pullEventsOk: false,
+            error: 'No se pudo sincronizar tras $_maxRetriesPerCycle intentos.',
+          );
+        }
+
+        // Si llegaron más señales durante el ciclo, repetir.
       }
+    } catch (e, st) {
+      debugPrint('[SYNC] Error crítico en _pump: $e\n$st');
+      _lastSyncResult = ManualSyncResult(
+        profilePushOk: false,
+        cropsReport: const SyncReport(synced: 0, failed: 0),
+        eventsPushOk: false,
+        eventsDeletesOk: false,
+        decisionsPushOk: false,
+        pullCropsOk: false,
+        pullProfileOk: false,
+        pullEventsOk: false,
+        error: 'Error inesperado: $e',
+      );
     } finally {
       state = false;
       _gate = null;
     }
   }
 
-  /// Espera hasta 15s a que haya una sesión activa, verificando directamente
-  /// el provider en lugar de confiar solo en el último valor emitido.
+  /// Espera hasta 5s a que haya una sesión activa.
   Future<Session?> _waitUntilSessionAvailable() async {
     int attempts = 0;
-    while (attempts < 30) {
+    while (attempts < 10) {
       final session = ref.read(authSessionProvider).value;
       if (session != null) return session;
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -210,82 +302,141 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
     return null;
   }
 
-  /// Verifica conectividad real con HTTP ping.
-  /// Intenta hasta 20 veces (10s) antes de rendirse.
-  /// Si isOnlineProvider ya indica conexión, hace un solo intento rápido.
-  Future<bool> _waitUntilOnlineVerified() async {
-    // Fast path: si el provider ya dice que hay red, un solo ping basta.
-    final providerHint = ref.read(isOnlineProvider).value;
-    if (providerHint == true) {
-      return _verifyConnectivity();
-    }
-
-    // Slow path: verificar con polling hasta que haya conexión o timeout.
-    int attempts = 0;
-    while (attempts < 20) {
-      if (await _verifyConnectivity()) return true;
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      attempts++;
-    }
-    return false;
-  }
-
   Future<bool> _verifyConnectivity() async {
     try {
-      await ApiClient.instance.dio.get(
-        '/api/profile',
+      final response = await ApiClient.instance.dio.get(
+        '/api/health',
         options: Options(
           receiveTimeout: const Duration(seconds: 5),
           sendTimeout: const Duration(seconds: 5),
         ),
       );
-      return true;
-    } catch (_) {
+      final isOk = response.statusCode == 200;
+      debugPrint('[SYNC] Conectividad: ${isOk ? "OK" : "FALLÓ"}');
+      return isOk;
+    } catch (e) {
+      debugPrint('[SYNC] Conectividad falló: $e');
       return false;
     }
   }
 
   Future<ManualSyncResult> _runFullSync({required String profileId}) async {
+    debugPrint('[SYNC] Iniciando sync completo para profileId=$profileId');
     final profileRepo = ref.read(profileRepositoryProvider);
     final cropsRepo = ref.read(cropsRepositoryProvider);
     final eventsRepo = ref.read(cropEventsRepositoryProvider);
     final recommendationsRepo = ref.read(recommendationsRepositoryProvider);
 
-    // 1) Push: perfil pendiente → cultivos → eventos → eliminaciones de eventos → decisiones
-    final profilePushOk = await profileRepo.syncPendingProfile();
-    final cropsReport = await cropsRepo.syncPending(profileId: profileId);
-    final eventsPushOk = await eventsRepo.syncPendingViaBatch();
-    final eventsDeletesOk = await eventsRepo.syncPendingDeletes();
-    final decisionsPushOk = await recommendationsRepo.syncPendingDecisions();
+    var profilePushOk = false;
+    var cropsReport = const SyncReport(synced: 0, failed: 0);
+    var eventsPushOk = false;
+    var eventsDeletesOk = false;
+    var decisionsPushOk = false;
+    var pullCropsOk = false;
+    var pullProfileOk = false;
+    var pullEventsOk = false;
+    List<CropSyncConflict> conflicts = const [];
 
-    // 2) Pull cultivos (ahora retorna conflictos)
-    final pullResult = await cropsRepo.pullCropsFromServer(
-      profileId: profileId,
-    );
-    final pullCropsOk = pullResult.success;
-    final conflicts = pullResult.conflicts;
-
-    // 3) Pull perfil
-    var pullProfileOk = true;
     try {
-      await profileRepo.refreshFromServer();
-    } on ApiException {
-      pullProfileOk = false;
+      // 1) Push: perfil pendiente
+      debugPrint('[SYNC] Push perfil pendiente...');
+      try {
+        profilePushOk = await profileRepo.syncPendingProfile();
+        debugPrint('[SYNC] Push perfil: ${profilePushOk ? "OK" : "FALLÓ"}');
+      } catch (e) {
+        debugPrint('[SYNC] Error push perfil: $e');
+      }
+
+      // 2) Push: cultivos pendientes
+      debugPrint('[SYNC] Push cultivos pendientes...');
+      try {
+        cropsReport = await cropsRepo.syncPending(profileId: profileId);
+        debugPrint('[SYNC] Push cultivos: ${cropsReport.synced} sincronizados, ${cropsReport.failed} fallidos');
+      } catch (e) {
+        debugPrint('[SYNC] Error push cultivos: $e');
+      }
+
+      // 3) Push: eventos pendientes
+      debugPrint('[SYNC] Push eventos pendientes...');
+      try {
+        eventsPushOk = await eventsRepo.syncPendingViaBatch();
+        debugPrint('[SYNC] Push eventos: ${eventsPushOk ? "OK" : "FALLÓ"}');
+      } catch (e) {
+        debugPrint('[SYNC] Error push eventos: $e');
+      }
+
+      // 4) Push: eliminaciones de eventos
+      debugPrint('[SYNC] Push eliminaciones de eventos...');
+      try {
+        eventsDeletesOk = await eventsRepo.syncPendingDeletes();
+        debugPrint('[SYNC] Push eliminaciones: ${eventsDeletesOk ? "OK" : "FALLÓ"}');
+      } catch (e) {
+        debugPrint('[SYNC] Error push eliminaciones: $e');
+      }
+
+      // 5) Push: decisiones pendientes
+      debugPrint('[SYNC] Push decisiones pendientes...');
+      try {
+        decisionsPushOk = await recommendationsRepo.syncPendingDecisions();
+        debugPrint('[SYNC] Push decisiones: ${decisionsPushOk ? "OK" : "FALLÓ"}');
+      } catch (e) {
+        debugPrint('[SYNC] Error push decisiones: $e');
+      }
+
+      // 6) Pull cultivos
+      debugPrint('[SYNC] Pull cultivos desde servidor...');
+      try {
+        final pullResult = await cropsRepo.pullCropsFromServer(
+          profileId: profileId,
+        );
+        pullCropsOk = pullResult.success;
+        conflicts = pullResult.conflicts;
+        debugPrint('[SYNC] Pull cultivos: ${pullCropsOk ? "OK" : "FALLÓ"}, ${conflicts.length} conflictos');
+      } catch (e) {
+        debugPrint('[SYNC] Error pull cultivos: $e');
+      }
+
+      // 7) Pull perfil
+      debugPrint('[SYNC] Pull perfil desde servidor...');
+      try {
+        await profileRepo.refreshFromServer();
+        pullProfileOk = true;
+        debugPrint('[SYNC] Pull perfil: OK');
+      } catch (e) {
+        debugPrint('[SYNC] Error pull perfil: $e');
+      }
+
+      // 8) Pull eventos por cada cultivo local
+      debugPrint('[SYNC] Obteniendo IDs de cultivos locales...');
+      List<String> cropIds = [];
+      try {
+        cropIds = await cropsRepo.listLocalCropIds(profileId: profileId);
+        debugPrint('[SYNC] ${cropIds.length} cultivos locales encontrados');
+      } catch (e) {
+        debugPrint('[SYNC] Error obteniendo IDs locales: $e');
+      }
+
+      debugPrint('[SYNC] Pull eventos desde servidor...');
+      try {
+        pullEventsOk = await eventsRepo.refreshAllFromServer(cropIds);
+        debugPrint('[SYNC] Pull eventos: ${pullEventsOk ? "OK" : "FALLÓ"}');
+      } catch (e) {
+        debugPrint('[SYNC] Error pull eventos: $e');
+      }
+
+      for (final id in cropIds) {
+        ref.invalidate(cropEventsProvider(id));
+      }
+
+      ref.invalidate(cropsProvider);
+      ref.invalidate(currentProfileProvider);
+      ref.invalidate(pendingSyncCountProvider);
+      ref.invalidate(dashboardRecommendationsProvider);
+    } catch (e, st) {
+      debugPrint('[SYNC] Error general en _runFullSync: $e\n$st');
     }
 
-    // 4) Pull eventos por cada cultivo local
-    final cropIds = await cropsRepo.listLocalCropIds(profileId: profileId);
-    final pullEventsOk = await eventsRepo.refreshAllFromServer(cropIds);
-
-    for (final id in cropIds) {
-      ref.invalidate(cropEventsProvider(id));
-    }
-
-    ref.invalidate(cropsProvider);
-    ref.invalidate(currentProfileProvider);
-    ref.invalidate(pendingSyncCountProvider);
-    ref.invalidate(dashboardRecommendationsProvider);
-
+    debugPrint('[SYNC] Sync completo finalizado');
     return ManualSyncResult(
       profilePushOk: profilePushOk,
       cropsReport: cropsReport,
@@ -311,6 +462,11 @@ Future<void> requestSyncFromAppBar(BuildContext context, WidgetRef ref) async {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(result.userMessage()),
+        backgroundColor: result.isFullSuccess
+            ? AppColors.primaryGreen
+            : result.error != null
+                ? AppColors.alertRedStrong
+                : null,
         behavior: SnackBarBehavior.floating,
         action: result.conflicts.isNotEmpty
             ? SnackBarAction(
@@ -322,6 +478,14 @@ Future<void> requestSyncFromAppBar(BuildContext context, WidgetRef ref) async {
             : null,
       ),
     );
+  } else {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No se pudo completar la sincronización.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
 
@@ -331,7 +495,9 @@ final syncBootstrapProvider = Provider<void>((ref) {
 
   ref.listen<AsyncValue<bool>>(isOnlineProvider, (previous, next) {
     final online = next.value;
+    debugPrint('[SYNC] isOnlineProvider cambió: $online (previo: $prevOnline)');
     if (online == true && prevOnline != true) {
+      debugPrint('[SYNC] Reconexión detectada, solicitando sync...');
       ref.read(syncCoordinatorProvider.notifier).resetBackoff();
       ref.read(syncCoordinatorProvider.notifier).requestSync();
     }
@@ -340,88 +506,12 @@ final syncBootstrapProvider = Provider<void>((ref) {
 
   ref.listen<AsyncValue<Session?>>(authSessionProvider, (previous, next) {
     final now = next.value;
+    debugPrint('[SYNC] authSessionProvider cambió: ${now != null ? "sesión activa" : "sin sesión"}');
     if (now == null) return;
     final prevSession = previous?.value;
     if (prevSession == null || prevSession.user.id != now.user.id) {
+      debugPrint('[SYNC] Nueva sesión o cambio de usuario, solicitando sync...');
       ref.read(syncCoordinatorProvider.notifier).requestSync();
     }
   }, fireImmediately: true);
 });
-
-/// Muestra un modal con el detalle de los conflictos de sincronización.
-void showConflictDetailSheet(
-  BuildContext context,
-  List<CropSyncConflict> conflicts,
-) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (ctx) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Campos actualizados desde el servidor',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Tus cambios locales fueron sobrescritos por la versión del servidor.',
-              style: TextStyle(color: Color(0xFF6B6B6B), fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: conflicts.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (_, i) {
-                  final c = conflicts[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.cloud_download_outlined,
-                          size: 18,
-                          color: Color(0xFF1F7A3A),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                c.cropLabel,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${c.fieldLabel}: ${c.localValue} → ${c.serverValue}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF6B6B6B),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}

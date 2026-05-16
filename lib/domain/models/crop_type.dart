@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
+
 /// Espejo del enum `CropType` del backend Spring.
 enum CropType {
   BANANO,
@@ -49,20 +51,20 @@ extension CropTypeX on CropType {
   };
 
   Color get iconBackground => switch (this) {
-    CropType.BANANO => const Color(0xFFFFF6DD),
-    CropType.MANGO => const Color(0xFFE8F5E9),
-    CropType.YUCA => const Color(0xFFEDEFF1),
-    CropType.PLATANO => const Color(0xFFFFF6DD),
-    CropType.MAIZ => const Color(0xFFFFF6DD),
-    CropType.PALMA => const Color(0xFFE8F5E9),
+    CropType.BANANO => AppColors.warningAmberSoft,
+    CropType.MANGO => AppColors.softGreenBg,
+    CropType.YUCA => AppColors.divider,
+    CropType.PLATANO => AppColors.warningAmberSoft,
+    CropType.MAIZ => AppColors.warningAmberSoft,
+    CropType.PALMA => AppColors.softGreenBg,
   };
 
   Color get iconForeground => switch (this) {
-    CropType.BANANO => const Color(0xFF8A6D00),
-    CropType.MANGO => const Color(0xFF1F7A3A),
-    CropType.YUCA => const Color(0xFF6B6B6B),
-    CropType.PLATANO => const Color(0xFF8A6D00),
-    CropType.MAIZ => const Color(0xFF8A6D00),
-    CropType.PALMA => const Color(0xFF1F7A3A),
+    CropType.BANANO => AppColors.cropTextBrown,
+    CropType.MANGO => AppColors.primaryGreen,
+    CropType.YUCA => AppColors.textSecondary,
+    CropType.PLATANO => AppColors.cropTextBrown,
+    CropType.MAIZ => AppColors.cropTextBrown,
+    CropType.PALMA => AppColors.primaryGreen,
   };
 }

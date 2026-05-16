@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// Botón principal verde de AgroMagdalena.
+/// Botón principal verde de Agromag.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -31,7 +31,7 @@ class PrimaryButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primaryGreenDark,
+        backgroundColor: AppColors.primaryGreen,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(54),
         padding: const EdgeInsets.symmetric(horizontal: 24),

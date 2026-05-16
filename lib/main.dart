@@ -22,5 +22,5 @@ Future<void> main() async {
 
   await initializeDateFormatting('es');
 
-  runApp(const ProviderScope(child: AgroMagdalenaApp()));
+  runApp(const ProviderScope(child: AgromagApp()));
 }
