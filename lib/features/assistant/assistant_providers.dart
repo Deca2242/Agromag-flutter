@@ -15,9 +15,9 @@ List<ChatMessage> _initialMessages() => [
     id: '0',
     author: ChatAuthor.bot,
     text:
-        '¡Hola! Soy tu asistente agrícola. Puedo ayudarte con tus cultivos '
-        'registrados, alertas, recomendaciones y clima cuando estén disponibles. '
-        'Pregúntame sobre riego, plagas, fertilización u otras labores.',
+        '¡Hola! Soy AGROBOT, tu asistente agrícola impulsado por DeepSeek vía OpenRouter. '
+        'Puedo ayudarte con tus cultivos registrados, alertas, recomendaciones, clima, '
+        'riego, plagas, fertilización u otras labores.',
     time: DateFormat('hh:mm a').format(DateTime.now()),
   ),
 ];
