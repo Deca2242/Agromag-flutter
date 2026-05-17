@@ -92,10 +92,8 @@ final alertsProvider = AsyncNotifierProvider<AlertsNotifier, List<Alert>>(
   AlertsNotifier.new,
 );
 
-/// Filtro activo en la pantalla de alertas (chips superiores).
 final alertsFilterProvider = StateProvider<AlertCategory?>((ref) => null);
 
-/// Alertas filtradas por categoria.
 final filteredAlertsProvider = Provider<List<Alert>>((ref) {
   final allAsync = ref.watch(alertsProvider);
   final filter = ref.watch(alertsFilterProvider);
@@ -105,7 +103,6 @@ final filteredAlertsProvider = Provider<List<Alert>>((ref) {
   return all.where((a) => a.category == filter).toList(growable: false);
 });
 
-/// Conteo de alertas no leidas (para badge dinamico).
 final alertsUnreadCountProvider = FutureProvider<AlertUnreadCount>((ref) async {
   final api = ref.read(alertsApiProvider);
   try {
@@ -115,5 +112,4 @@ final alertsUnreadCountProvider = FutureProvider<AlertUnreadCount>((ref) async {
   }
 });
 
-/// Tick para forzar recarga de alertas.
 final alertsRefreshTickProvider = StateProvider<int>((ref) => 0);

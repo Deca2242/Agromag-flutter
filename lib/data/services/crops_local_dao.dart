@@ -7,7 +7,6 @@ import '../../domain/models/sync_status.dart';
 import 'crop_sync_conflict.dart';
 import 'local_db.dart';
 
-/// Acceso a la tabla `crops` en SQLite.
 class CropsLocalDao {
   const CropsLocalDao();
 
@@ -52,7 +51,6 @@ class CropsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
-  /// Returns ids of crops pending upload to server for the first time (is_new_local=1).
   Future<List<Crop>> newLocalPendingByProfile(String profileId) async {
     final db = LocalDb.instance.db;
     final rows = await db.rawQuery(
@@ -62,7 +60,6 @@ class CropsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
-  /// Returns crops that were edited offline (already on server, pending re-upload).
   Future<List<Crop>> editedPendingByProfile(String profileId) async {
     final db = LocalDb.instance.db;
     final rows = await db.rawQuery(
@@ -72,7 +69,6 @@ class CropsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
-  /// Nuevos locales cuyo último intento de subida falló (`ERROR`).
   Future<List<Crop>> newLocalErrorByProfile(String profileId) async {
     final db = LocalDb.instance.db;
     final rows = await db.rawQuery(
@@ -82,7 +78,6 @@ class CropsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
-  /// Ediciones cuyo último intento de subida falló (`ERROR`).
   Future<List<Crop>> editedErrorByProfile(String profileId) async {
     final db = LocalDb.instance.db;
     final rows = await db.rawQuery(
@@ -92,7 +87,6 @@ class CropsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
-  /// Filas en `ERROR` sin borrado pendente (para badge de sync).
   Future<int> countErrorByProfile(String profileId) async {
     final db = LocalDb.instance.db;
     final rows = await db.rawQuery(
@@ -106,7 +100,6 @@ class CropsLocalDao {
     return 0;
   }
 
-  /// Returns crops pending deletion on the server.
   Future<List<Crop>> pendingDeletesByProfile(String profileId) async {
     final db = LocalDb.instance.db;
     final rows = await db.query(
@@ -117,7 +110,7 @@ class CropsLocalDao {
     return rows.map(_fromRow).toList();
   }
 
-  /// Marks a crop as pending deletion (hides from UI; deletes from server on reconnect).
+  /// Marca un tombstone local para ocultar el cultivo hasta confirmar el borrado remoto.
   Future<void> markDeletedPending(String id) async {
     final db = LocalDb.instance.db;
     await db.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
@@ -133,7 +126,6 @@ class CropsLocalDao {
     );
   }
 
-  /// Physically removes a crop row from SQLite.
   Future<void> deleteLocal(String id) async {
     final db = LocalDb.instance.db;
     await db.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
@@ -272,7 +264,6 @@ class CropsLocalDao {
     return conflicts;
   }
 
-  /// Updates an existing crop row keeping is_new_local as-is.
   Future<void> updateCrop(Crop crop) async {
     final db = LocalDb.instance.db;
     await db.update(

@@ -44,33 +44,31 @@ class AlertCard extends ConsumerWidget {
       AlertCategory.climate => Icons.cloud_outlined,
     };
     if (alert.severity == AlertSeverity.high) {
-      return Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: p.iconBg,
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: const Icon(
-          Icons.warning_amber_rounded,
-          color: AppColors.alertRed,
-          size: 20,
+      return Semantics(
+        label: 'Alerta alta',
+        image: true,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(color: p.iconBg, shape: BoxShape.circle),
+          alignment: Alignment.center,
+          child: const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.alertRed,
+            size: 20,
+          ),
         ),
       );
     }
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: p.iconBg,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        icon,
-        color: p.iconFg,
-        size: 18,
+    return Semantics(
+      label: 'Alerta ${alert.category.label.toLowerCase()}',
+      image: true,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(color: p.iconBg, shape: BoxShape.circle),
+        alignment: Alignment.center,
+        child: Icon(icon, color: p.iconFg, size: 18),
       ),
     );
   }
@@ -156,7 +154,10 @@ class AlertCard extends ConsumerWidget {
                     runSpacing: 8,
                     children: [
                       _DetailChip(label: alert.severity.label, color: p.side),
-                      _DetailChip(label: alert.category.label, color: AppColors.primaryGreen),
+                      _DetailChip(
+                        label: alert.category.label,
+                        color: AppColors.primaryGreen,
+                      ),
                       _DetailChip(
                         label: alert.isRead ? 'Leída' : 'No leída',
                         color: alert.isRead ? AppColors.textMuted : p.side,
@@ -166,7 +167,10 @@ class AlertCard extends ConsumerWidget {
                   const SizedBox(height: 18),
                   _DetailSection(title: 'Cultivo', body: alert.cropTag),
                   _DetailSection(title: 'Detalle', body: alert.description),
-                  _DetailSection(title: 'Acción sugerida', body: _recommendedAction()),
+                  _DetailSection(
+                    title: 'Acción sugerida',
+                    body: _recommendedAction(),
+                  ),
                   const SizedBox(height: 12),
                   if (!alert.isRead)
                     FilledButton.icon(
@@ -230,10 +234,14 @@ class AlertCard extends ConsumerWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isRead ? AppColors.surface.withValues(alpha: 0.6) : AppColors.surface,
+          color: isRead
+              ? AppColors.surface.withValues(alpha: 0.6)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isRead ? AppColors.border.withValues(alpha: 0.5) : AppColors.border,
+            color: isRead
+                ? AppColors.border.withValues(alpha: 0.5)
+                : AppColors.border,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -275,12 +283,15 @@ class AlertCard extends ConsumerWidget {
                                       ),
                                     ),
                                     if (!isRead)
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          color: p.side,
-                                          shape: BoxShape.circle,
+                                      Semantics(
+                                        label: 'Alerta no leída',
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: p.side,
+                                            shape: BoxShape.circle,
+                                          ),
                                         ),
                                       ),
                                   ],
@@ -427,10 +438,7 @@ class _DetailSection extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             body,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
+            style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
           ),
         ],
       ),

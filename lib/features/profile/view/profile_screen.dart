@@ -67,6 +67,49 @@ class _ProfileBody extends StatelessWidget {
     // El redirect del router navega al login automáticamente.
   }
 
+  void _showAboutAgromag(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Agromag',
+      applicationVersion: '1.0.0',
+      applicationIcon: const Icon(
+        Icons.eco,
+        color: AppColors.primaryGreen,
+        size: 40,
+      ),
+      children: const [
+        Text(
+          'Agromag es una aplicación móvil offline-first creada para apoyar '
+          'a productores agrícolas del Magdalena en la gestión de sus cultivos, '
+          'actividades de campo, recomendaciones, alertas climáticas y asistencia '
+          'con AGROBOT.',
+        ),
+        SizedBox(height: 12),
+        Text(
+          'La app permite registrar cultivos, consultar clima, recibir '
+          'recomendaciones agronómicas, manejar alertas y conservar datos '
+          'localmente cuando no hay conexión. Al reconectarse, la información '
+          'se sincroniza con el backend de forma segura.',
+        ),
+        SizedBox(height: 12),
+        Text(
+          'AGROBOT usa el contexto registrado en la app para responder preguntas '
+          'sobre cultivos, alertas, recomendaciones y labores de campo. Si se '
+          'habilita búsqueda web, solo usa consultas agronómicas sanitizadas, '
+          'sin enviar datos privados del productor.',
+        ),
+        SizedBox(height: 12),
+        Text(
+          'Tus cultivos, eventos, alertas y recomendaciones pertenecen a tu cuenta. '
+          'Agromag está diseñado para que cada productor acceda únicamente a su '
+          'propia información.',
+        ),
+        SizedBox(height: 12),
+        Text('Agromag MVP - Magdalena, Colombia'),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -182,7 +225,7 @@ class _ProfileBody extends StatelessWidget {
             ProfileSectionTile(
               icon: Icons.info_outline,
               title: 'Acerca de Agromag',
-              onTap: () {},
+              onTap: () => _showAboutAgromag(context),
             ),
             ProfileSectionTile(
               icon: Icons.smartphone,

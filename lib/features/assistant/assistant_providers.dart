@@ -57,7 +57,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
       final reply = await _repo.sendMessage(text.trim(), state);
       state = [...state.where((m) => !m.isLoading), reply];
     } catch (e) {
-      if (kDebugMode) print('[Chat] Error sendMessage: $e');
+      if (kDebugMode) debugPrint('[Chat] Error sendMessage: $e');
       final errorMsg = ChatMessage(
         id: '${DateTime.now().millisecondsSinceEpoch}_err',
         author: ChatAuthor.bot,
@@ -95,7 +95,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
 
     try {
       await for (final event in _repo.sendMessageStream(text.trim(), state)) {
-        if (kDebugMode) print('[Chat SSE] Event: ${event['type']}');
+        if (kDebugMode) debugPrint('[Chat SSE] Event: ${event['type']}');
 
         switch (event['type']) {
           case 'status':
@@ -166,7 +166,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
         state = [...state.where((m) => m.id != streamId), errorMsg];
       }
     } catch (e) {
-      if (kDebugMode) print('[Chat SSE] Error: $e');
+      if (kDebugMode) debugPrint('[Chat SSE] Error: $e');
       final errorMsg = ChatMessage(
         id: '${DateTime.now().millisecondsSinceEpoch}_err',
         author: ChatAuthor.bot,

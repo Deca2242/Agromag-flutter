@@ -4,9 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/env.dart';
 import 'api_exceptions.dart';
 
-/// Cliente HTTP Dio preconfigurado para el backend Spring.
-///
-/// Añade automáticamente el Bearer token de Supabase y maneja refresh en 401.
 class ApiClient {
   ApiClient._() {
     _dio = Dio(
@@ -58,7 +55,6 @@ class _AuthInterceptor extends Interceptor {
           return;
         }
       } catch (_) {
-        // refresh fallido → deja pasar el error 401
       }
     }
     handler.next(err);
@@ -70,8 +66,7 @@ class _ErrorInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final statusCode = err.response?.statusCode;
 
-    if (err.type == DioExceptionType.connectionError ||
-        err.type == DioExceptionType.unknown) {
+    if (_isNetworkFailure(err.type)) {
       handler.reject(
         DioException(
           requestOptions: err.requestOptions,
@@ -99,6 +94,19 @@ class _ErrorInterceptor extends Interceptor {
         type: err.type,
       ),
     );
+  }
+
+  bool _isNetworkFailure(DioExceptionType type) {
+    return switch (type) {
+      DioExceptionType.connectionError ||
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.unknown => true,
+      DioExceptionType.badCertificate ||
+      DioExceptionType.badResponse ||
+      DioExceptionType.cancel => false,
+    };
   }
 
   String? _extractMessage(dynamic data) {

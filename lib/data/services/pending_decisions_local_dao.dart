@@ -1,5 +1,3 @@
-import 'package:sqflite/sqflite.dart';
-
 import 'local_db.dart';
 
 class PendingDecisionRecord {

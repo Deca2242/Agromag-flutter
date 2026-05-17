@@ -17,24 +17,14 @@ class AssistantApi {
 
   String get _baseUrl => Env.apiBaseUrl;
 
-  String? get _token => Supabase.instance.client.auth.currentSession?.accessToken;
+  String? get _token =>
+      Supabase.instance.client.auth.currentSession?.accessToken;
 
   Future<String> sendMessage(String message, List<ChatMessage> history) async {
     try {
-      final historyJson = history
-          .where((m) => !m.isLoading && !m.isStreaming)
-          .map(
-            (m) => {
-              'role': m.author == ChatAuthor.bot ? 'assistant' : 'user',
-              'content': m.text,
-            },
-          )
-          .take(10)
-          .toList();
-
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/assistant/chat',
-        data: {'message': message, 'history': historyJson},
+        data: {'message': message, 'history': _historyPayload(history)},
       );
       return response.data?['reply'] as String? ?? '';
     } on DioException catch (e) {
@@ -48,20 +38,12 @@ class AssistantApi {
   ) async* {
     final token = _token;
     if (token == null) {
-      yield {'type': 'error', 'data': 'No hay sesión activa. Inicia sesión de nuevo.'};
+      yield {
+        'type': 'error',
+        'data': 'No hay sesión activa. Inicia sesión de nuevo.',
+      };
       return;
     }
-
-    final historyJson = history
-        .where((m) => !m.isLoading && !m.isStreaming)
-        .map(
-          (m) => {
-            'role': m.author == ChatAuthor.bot ? 'assistant' : 'user',
-            'content': m.text,
-          },
-        )
-        .take(10)
-        .toList();
 
     final uri = Uri.parse('$_baseUrl/api/assistant/chat/stream');
 
@@ -71,22 +53,35 @@ class AssistantApi {
         'Authorization': 'Bearer $token',
         'Accept': 'text/event-stream',
       })
-      ..body = jsonEncode({'message': message, 'history': historyJson});
+      ..body = jsonEncode({
+        'message': message,
+        'history': _historyPayload(history),
+      });
 
     late http.StreamedResponse response;
     try {
       response = await request.send();
     } catch (e) {
-      yield {'type': 'error', 'data': 'No se pudo conectar al servidor. Verifica que el backend esté corriendo.'};
+      yield {
+        'type': 'error',
+        'data':
+            'No se pudo conectar al servidor. Verifica que el backend esté corriendo.',
+      };
       return;
     }
 
     if (response.statusCode != 200) {
-      final body = await response.stream.bytesToString();
+      await response.stream.drain<void>();
       if (response.statusCode == 401) {
-        yield {'type': 'error', 'data': 'Sesión expirada. Inicia sesión de nuevo.'};
+        yield {
+          'type': 'error',
+          'data': 'Sesión expirada. Inicia sesión de nuevo.',
+        };
       } else {
-        yield {'type': 'error', 'data': 'Error del servidor (${response.statusCode}): $body'};
+        yield {
+          'type': 'error',
+          'data': 'AGROBOT no pudo responder en este momento.',
+        };
       }
       return;
     }
@@ -113,21 +108,8 @@ class AssistantApi {
 
         if (line.isEmpty) {
           if (currentData.isNotEmpty) {
-            final data = currentData.toString();
-            if (currentEvent == 'token') {
-              yield {'type': 'token', 'data': data};
-            } else if (currentEvent == 'suggestions') {
-              try {
-                final suggestions = List<String>.from(jsonDecode(data));
-                yield {'type': 'suggestions', 'data': suggestions};
-              } catch (_) {}
-            } else if (currentEvent == 'done') {
-              yield {'type': 'done'};
-            } else if (currentEvent == 'error') {
-              yield {'type': 'error', 'data': data};
-            } else if (currentEvent == 'status') {
-              yield {'type': 'status', 'data': data};
-            }
+            final parsed = _parseSseEvent(currentEvent, currentData.toString());
+            if (parsed != null) yield parsed;
           }
           currentEvent = 'message';
           currentData.clear();
@@ -153,21 +135,45 @@ class AssistantApi {
     }
 
     if (currentData.isNotEmpty) {
-      final data = currentData.toString();
-      if (currentEvent == 'token') {
-        yield {'type': 'token', 'data': data};
-      } else if (currentEvent == 'suggestions') {
-        try {
-          final suggestions = List<String>.from(jsonDecode(data));
-          yield {'type': 'suggestions', 'data': suggestions};
-        } catch (_) {}
-      } else if (currentEvent == 'done') {
-        yield {'type': 'done'};
-      } else if (currentEvent == 'error') {
-        yield {'type': 'error', 'data': data};
-      } else if (currentEvent == 'status') {
-        yield {'type': 'status', 'data': data};
-      }
+      final parsed = _parseSseEvent(currentEvent, currentData.toString());
+      if (parsed != null) yield parsed;
+    }
+  }
+
+  List<Map<String, String>> _historyPayload(List<ChatMessage> history) {
+    return history
+        .where((m) => !m.isLoading && !m.isStreaming)
+        .map(
+          (m) => {
+            'role': m.author == ChatAuthor.bot ? 'assistant' : 'user',
+            'content': m.text,
+          },
+        )
+        .take(10)
+        .toList(growable: false);
+  }
+
+  Map<String, dynamic>? _parseSseEvent(String event, String data) {
+    return switch (event) {
+      'token' => {'type': 'token', 'data': data},
+      'done' => {'type': 'done'},
+      'error' => {'type': 'error', 'data': data},
+      'status' => {'type': 'status', 'data': data},
+      'suggestions' => _parseSuggestions(data),
+      _ => null,
+    };
+  }
+
+  Map<String, dynamic>? _parseSuggestions(String data) {
+    try {
+      return {
+        'type': 'suggestions',
+        'data': List<String>.from(jsonDecode(data)),
+      };
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
     }
   }
 }

@@ -78,7 +78,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al actualizar: $e'),
+            content: const Text(
+              'No se pudo actualizar el perfil. Intenta nuevamente.',
+            ),
             backgroundColor: AppColors.alertRed,
             behavior: SnackBarBehavior.floating,
           ),
@@ -93,7 +95,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(currentProfileProvider);
 
-    // Inicializa campos cuando el perfil esté disponible.
     profileAsync.whenData((_) => _initFromProfile());
 
     return Scaffold(
@@ -184,7 +185,6 @@ class _EditForm extends StatelessWidget {
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 24),
-          // Campos solo lectura
           _ReadOnlyField(label: 'Correo electrónico', value: email),
           const SizedBox(height: 16),
           _ReadOnlyField(
@@ -194,7 +194,6 @@ class _EditForm extends StatelessWidget {
                 : 'Productor Independiente',
           ),
           const SizedBox(height: 24),
-          // Campos editables
           const Text(
             'Nombre completo *',
             style: TextStyle(fontWeight: FontWeight.w700),

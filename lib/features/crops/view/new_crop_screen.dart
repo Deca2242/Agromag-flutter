@@ -63,7 +63,6 @@ class _NewCropScreenState extends ConsumerState<NewCropScreen> {
             sownDate: _sownDate!,
           );
 
-      // Invalida el provider para que la lista se refresque.
       ref.invalidate(cropsProvider);
       ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
 
@@ -86,7 +85,9 @@ class _NewCropScreenState extends ConsumerState<NewCropScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al guardar: $e'),
+            content: const Text(
+              'No se pudo guardar el cultivo. Intenta nuevamente.',
+            ),
             backgroundColor: AppColors.alertRed,
             behavior: SnackBarBehavior.floating,
           ),
@@ -212,8 +213,6 @@ class _NewCropScreenState extends ConsumerState<NewCropScreen> {
     );
   }
 }
-
-// ── Sub-widgets ──────────────────────────────────────────────────────────────
 
 class _IdentificationCard extends StatelessWidget {
   const _IdentificationCard({
@@ -347,9 +346,7 @@ class _DateCard extends StatelessWidget {
             },
             borderRadius: BorderRadius.circular(12),
             child: InputDecorator(
-              decoration: InputDecoration(
-                errorText: sownDate == null ? null : null, // validator manual
-              ),
+              decoration: const InputDecoration(),
               child: Row(
                 children: [
                   Expanded(

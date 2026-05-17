@@ -159,7 +159,9 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
 
         while (retryCount < _maxRetriesPerCycle && !cycleSucceeded) {
           if (retryCount > 0) {
-            debugPrint('[SYNC] Reintento $retryCount de $_maxRetriesPerCycle...');
+            debugPrint(
+              '[SYNC] Reintento $retryCount de $_maxRetriesPerCycle...',
+            );
           }
 
           // 1. Verificar sesión activa (máx 5s).
@@ -181,7 +183,7 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
             await Future<void>.delayed(const Duration(seconds: 2));
             continue;
           }
-          debugPrint('[SYNC] Sesión obtenida: ${session.user.id}');
+          debugPrint('[SYNC] Sesión activa obtenida.');
 
           // 2. Verificar conectividad real (HTTP ping).
           final isActuallyOnline = await _verifyConnectivity();
@@ -196,7 +198,8 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
               pullCropsOk: false,
               pullProfileOk: false,
               pullEventsOk: false,
-              error: 'No se puede conectar con el servidor. Verifica tu conexión.',
+              error:
+                  'No se puede conectar con el servidor. Verifica tu conexión.',
             );
             retryCount++;
             await Future<void>.delayed(const Duration(seconds: 2));
@@ -246,7 +249,7 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
               pullCropsOk: false,
               pullProfileOk: false,
               pullEventsOk: false,
-              error: 'Error durante la sincronización: $e',
+              error: 'Error durante la sincronización. Intenta nuevamente.',
             );
             retryCount++;
             await Future<void>.delayed(const Duration(seconds: 2));
@@ -282,7 +285,7 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
         pullCropsOk: false,
         pullProfileOk: false,
         pullEventsOk: false,
-        error: 'Error inesperado: $e',
+        error: 'Error inesperado durante la sincronización.',
       );
     } finally {
       state = false;
@@ -321,7 +324,7 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
   }
 
   Future<ManualSyncResult> _runFullSync({required String profileId}) async {
-    debugPrint('[SYNC] Iniciando sync completo para profileId=$profileId');
+    debugPrint('[SYNC] Iniciando sync completo.');
     final profileRepo = ref.read(profileRepositoryProvider);
     final cropsRepo = ref.read(cropsRepositoryProvider);
     final eventsRepo = ref.read(cropEventsRepositoryProvider);
@@ -338,91 +341,75 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
     List<CropSyncConflict> conflicts = const [];
 
     try {
-      // 1) Push: perfil pendiente
-      debugPrint('[SYNC] Push perfil pendiente...');
-      try {
-        profilePushOk = await profileRepo.syncPendingProfile();
-        debugPrint('[SYNC] Push perfil: ${profilePushOk ? "OK" : "FALLÓ"}');
-      } catch (e) {
-        debugPrint('[SYNC] Error push perfil: $e');
-      }
+      profilePushOk = await _runSyncStep(
+        label: 'Push perfil',
+        fallback: false,
+        action: profileRepo.syncPendingProfile,
+        describe: _describeBool,
+      );
 
-      // 2) Push: cultivos pendientes
-      debugPrint('[SYNC] Push cultivos pendientes...');
-      try {
-        cropsReport = await cropsRepo.syncPending(profileId: profileId);
-        debugPrint('[SYNC] Push cultivos: ${cropsReport.synced} sincronizados, ${cropsReport.failed} fallidos');
-      } catch (e) {
-        debugPrint('[SYNC] Error push cultivos: $e');
-      }
+      cropsReport = await _runSyncStep(
+        label: 'Push cultivos',
+        fallback: const SyncReport(synced: 0, failed: 0),
+        action: () => cropsRepo.syncPending(profileId: profileId),
+        describe: (report) =>
+            '${report.synced} sincronizados, ${report.failed} fallidos',
+      );
 
-      // 3) Push: eventos pendientes
-      debugPrint('[SYNC] Push eventos pendientes...');
-      try {
-        eventsPushOk = await eventsRepo.syncPendingViaBatch();
-        debugPrint('[SYNC] Push eventos: ${eventsPushOk ? "OK" : "FALLÓ"}');
-      } catch (e) {
-        debugPrint('[SYNC] Error push eventos: $e');
-      }
+      eventsPushOk = await _runSyncStep(
+        label: 'Push eventos',
+        fallback: false,
+        action: eventsRepo.syncPendingViaBatch,
+        describe: _describeBool,
+      );
 
-      // 4) Push: eliminaciones de eventos
-      debugPrint('[SYNC] Push eliminaciones de eventos...');
-      try {
-        eventsDeletesOk = await eventsRepo.syncPendingDeletes();
-        debugPrint('[SYNC] Push eliminaciones: ${eventsDeletesOk ? "OK" : "FALLÓ"}');
-      } catch (e) {
-        debugPrint('[SYNC] Error push eliminaciones: $e');
-      }
+      eventsDeletesOk = await _runSyncStep(
+        label: 'Push eliminaciones de eventos',
+        fallback: false,
+        action: eventsRepo.syncPendingDeletes,
+        describe: _describeBool,
+      );
 
-      // 5) Push: decisiones pendientes
-      debugPrint('[SYNC] Push decisiones pendientes...');
-      try {
-        decisionsPushOk = await recommendationsRepo.syncPendingDecisions();
-        debugPrint('[SYNC] Push decisiones: ${decisionsPushOk ? "OK" : "FALLÓ"}');
-      } catch (e) {
-        debugPrint('[SYNC] Error push decisiones: $e');
-      }
+      decisionsPushOk = await _runSyncStep(
+        label: 'Push decisiones',
+        fallback: false,
+        action: recommendationsRepo.syncPendingDecisions,
+        describe: _describeBool,
+      );
 
-      // 6) Pull cultivos
-      debugPrint('[SYNC] Pull cultivos desde servidor...');
-      try {
-        final pullResult = await cropsRepo.pullCropsFromServer(
-          profileId: profileId,
-        );
-        pullCropsOk = pullResult.success;
-        conflicts = pullResult.conflicts;
-        debugPrint('[SYNC] Pull cultivos: ${pullCropsOk ? "OK" : "FALLÓ"}, ${conflicts.length} conflictos');
-      } catch (e) {
-        debugPrint('[SYNC] Error pull cultivos: $e');
-      }
+      final pullResult = await _runSyncStep(
+        label: 'Pull cultivos',
+        fallback: const PullCropsResult(success: false, conflicts: []),
+        action: () => cropsRepo.pullCropsFromServer(profileId: profileId),
+        describe: (result) =>
+            '${_describeBool(result.success)}, ${result.conflicts.length} conflictos',
+      );
+      pullCropsOk = pullResult.success;
+      conflicts = pullResult.conflicts;
 
-      // 7) Pull perfil
-      debugPrint('[SYNC] Pull perfil desde servidor...');
-      try {
-        await profileRepo.refreshFromServer();
-        pullProfileOk = true;
-        debugPrint('[SYNC] Pull perfil: OK');
-      } catch (e) {
-        debugPrint('[SYNC] Error pull perfil: $e');
-      }
+      pullProfileOk = await _runSyncStep(
+        label: 'Pull perfil',
+        fallback: false,
+        action: () async {
+          await profileRepo.refreshFromServer();
+          return true;
+        },
+        describe: _describeBool,
+      );
 
-      // 8) Pull eventos por cada cultivo local
-      debugPrint('[SYNC] Obteniendo IDs de cultivos locales...');
-      List<String> cropIds = [];
-      try {
-        cropIds = await cropsRepo.listLocalCropIds(profileId: profileId);
-        debugPrint('[SYNC] ${cropIds.length} cultivos locales encontrados');
-      } catch (e) {
-        debugPrint('[SYNC] Error obteniendo IDs locales: $e');
-      }
+      final cropIds = await _runSyncStep(
+        label: 'IDs de cultivos locales',
+        fallback: <String>[],
+        action: () => cropsRepo.listLocalCropIds(profileId: profileId),
+        describe: (ids) => '${ids.length} encontrados',
+      );
 
-      debugPrint('[SYNC] Pull eventos desde servidor...');
-      try {
-        pullEventsOk = await eventsRepo.refreshAllFromServer(cropIds);
-        debugPrint('[SYNC] Pull eventos: ${pullEventsOk ? "OK" : "FALLÓ"}');
-      } catch (e) {
-        debugPrint('[SYNC] Error pull eventos: $e');
-      }
+      pullEventsOk = await _runSyncStep(
+        label: 'Pull eventos',
+        fallback: false,
+        action: () => eventsRepo.refreshAllFromServer(cropIds),
+        describe: _describeBool,
+      );
 
       for (final id in cropIds) {
         ref.invalidate(cropEventsProvider(id));
@@ -449,6 +436,25 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
       conflicts: conflicts,
     );
   }
+
+  Future<T> _runSyncStep<T>({
+    required String label,
+    required T fallback,
+    required Future<T> Function() action,
+    required String Function(T value) describe,
+  }) async {
+    debugPrint('[SYNC] $label...');
+    try {
+      final result = await action();
+      debugPrint('[SYNC] $label: ${describe(result)}');
+      return result;
+    } catch (e) {
+      debugPrint('[SYNC] Error $label: $e');
+      return fallback;
+    }
+  }
+
+  String _describeBool(bool value) => value ? 'OK' : 'FALLÓ';
 }
 
 /// Sincronización manual desde la AppBar: avisa si no hay red.
@@ -465,8 +471,8 @@ Future<void> requestSyncFromAppBar(BuildContext context, WidgetRef ref) async {
         backgroundColor: result.isFullSuccess
             ? AppColors.primaryGreen
             : result.error != null
-                ? AppColors.alertRedStrong
-                : null,
+            ? AppColors.alertRedStrong
+            : null,
         behavior: SnackBarBehavior.floating,
         action: result.conflicts.isNotEmpty
             ? SnackBarAction(
@@ -499,19 +505,27 @@ final syncBootstrapProvider = Provider<void>((ref) {
     if (online == true && prevOnline != true) {
       debugPrint('[SYNC] Reconexión detectada, solicitando sync...');
       ref.read(syncCoordinatorProvider.notifier).resetBackoff();
-      ref.read(syncCoordinatorProvider.notifier).requestSync();
+      unawaited(
+        ref.read(syncCoordinatorProvider.notifier).requestSync().catchError((_) {}),
+      );
     }
     if (online != null) prevOnline = online;
   }, fireImmediately: true);
 
   ref.listen<AsyncValue<Session?>>(authSessionProvider, (previous, next) {
     final now = next.value;
-    debugPrint('[SYNC] authSessionProvider cambió: ${now != null ? "sesión activa" : "sin sesión"}');
+    debugPrint(
+      '[SYNC] authSessionProvider cambió: ${now != null ? "sesión activa" : "sin sesión"}',
+    );
     if (now == null) return;
     final prevSession = previous?.value;
     if (prevSession == null || prevSession.user.id != now.user.id) {
-      debugPrint('[SYNC] Nueva sesión o cambio de usuario, solicitando sync...');
-      ref.read(syncCoordinatorProvider.notifier).requestSync();
+      debugPrint(
+        '[SYNC] Nueva sesión o cambio de usuario, solicitando sync...',
+      );
+      unawaited(
+        ref.read(syncCoordinatorProvider.notifier).requestSync().catchError((_) {}),
+      );
     }
   }, fireImmediately: true);
 });

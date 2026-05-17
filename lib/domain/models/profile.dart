@@ -68,15 +68,27 @@ class Profile {
 
   /// Desde una fila SQLite.
   factory Profile.fromDbMap(Map<String, dynamic> row) {
+    final id = row['id'] as String?;
+    final email = row['email'] as String?;
+    final roleStr = row['role'] as String?;
+    final fullName = row['full_name'] as String?;
+    final municipalityStr = row['municipality'] as String?;
+    final createdAtStr = row['created_at'] as String?;
+
+    if (id == null || email == null || roleStr == null ||
+        municipalityStr == null || createdAtStr == null) {
+      throw const FormatException('Profile row missing required fields');
+    }
+
     return Profile(
-      id: row['id'] as String,
-      email: row['email'] as String,
-      role: AppRole.fromJson(row['role'] as String),
-      fullName: row['full_name'] as String,
-      municipality: Municipality.fromJson(row['municipality'] as String),
-      createdAt: DateTime.parse(row['created_at'] as String),
+      id: id,
+      email: email,
+      role: AppRole.fromJson(roleStr),
+      fullName: fullName ?? '',
+      municipality: Municipality.fromJson(municipalityStr),
+      createdAt: DateTime.tryParse(createdAtStr) ?? DateTime.now(),
       syncedAt: row['synced_at'] != null
-          ? DateTime.parse(row['synced_at'] as String)
+          ? DateTime.tryParse(row['synced_at'] as String)
           : null,
     );
   }

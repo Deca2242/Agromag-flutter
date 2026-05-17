@@ -11,13 +11,10 @@ import 'data/services/local_db.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Carga las variables de entorno desde assets/.env
   await dotenv.load();
 
-  // 2. Inicializa Supabase (restaura la sesión guardada automáticamente)
   await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
 
-  // 3. Abre la base de datos SQLite local
   await LocalDb.instance.open();
 
   await initializeDateFormatting('es');

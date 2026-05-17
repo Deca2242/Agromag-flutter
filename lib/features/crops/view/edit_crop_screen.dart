@@ -97,7 +97,9 @@ class _EditCropScreenState extends ConsumerState<EditCropScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al actualizar: $e'),
+            content: const Text(
+              'No se pudo actualizar el cultivo. Intenta nuevamente.',
+            ),
             backgroundColor: AppColors.alertRed,
             behavior: SnackBarBehavior.floating,
           ),

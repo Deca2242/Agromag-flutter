@@ -59,66 +59,26 @@ Future<void> _openRecommendationDecision(
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                try {
-                  await ref
-                      .read(recommendationsRepositoryProvider)
-                      .submitDecision(
-                        recommendationId: recommendation.id,
-                        followed: true,
-                      );
-                  ref.invalidate(cropRecommendationsProvider(cropId));
-                  ref.invalidate(dashboardRecommendationsProvider);
-                  ref
-                      .read(recommendationHistoryTickProvider(cropId).notifier)
-                      .state++;
-                  ref
-                      .read(syncCoordinatorProvider.notifier)
-                      .scheduleDebouncedSync();
-                } catch (_) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('No se pudo guardar la decisión.'),
-                        backgroundColor: AppColors.alertRed,
-                      ),
-                    );
-                  }
-                }
-              },
+              onPressed: () => _submitRecommendationDecision(
+                context,
+                ctx,
+                ref,
+                recommendationId: recommendation.id,
+                cropId: cropId,
+                followed: true,
+              ),
               child: Text(online ? 'Realizado' : 'Realizado (offline)'),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                try {
-                  await ref
-                      .read(recommendationsRepositoryProvider)
-                      .submitDecision(
-                        recommendationId: recommendation.id,
-                        followed: false,
-                      );
-                  ref.invalidate(cropRecommendationsProvider(cropId));
-                  ref.invalidate(dashboardRecommendationsProvider);
-                  ref
-                      .read(recommendationHistoryTickProvider(cropId).notifier)
-                      .state++;
-                  ref
-                      .read(syncCoordinatorProvider.notifier)
-                      .scheduleDebouncedSync();
-                } catch (_) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('No se pudo guardar la decisión.'),
-                        backgroundColor: AppColors.alertRed,
-                      ),
-                    );
-                  }
-                }
-              },
+              onPressed: () => _submitRecommendationDecision(
+                context,
+                ctx,
+                ref,
+                recommendationId: recommendation.id,
+                cropId: cropId,
+                followed: false,
+              ),
               child: Text(online ? 'Rechazado' : 'Rechazado (offline)'),
             ),
           ],
@@ -126,6 +86,35 @@ Future<void> _openRecommendationDecision(
       ),
     ),
   );
+}
+
+Future<void> _submitRecommendationDecision(
+  BuildContext screenContext,
+  BuildContext sheetContext,
+  WidgetRef ref, {
+  required String recommendationId,
+  required String cropId,
+  required bool followed,
+}) async {
+  Navigator.of(sheetContext).pop();
+  try {
+    await ref
+        .read(recommendationsRepositoryProvider)
+        .submitDecision(recommendationId: recommendationId, followed: followed);
+    ref.invalidate(cropRecommendationsProvider(cropId));
+    ref.invalidate(dashboardRecommendationsProvider);
+    ref.read(recommendationHistoryTickProvider(cropId).notifier).state++;
+    ref.read(syncCoordinatorProvider.notifier).scheduleDebouncedSync();
+  } catch (_) {
+    if (screenContext.mounted) {
+      ScaffoldMessenger.of(screenContext).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo guardar la decisión.'),
+          backgroundColor: AppColors.alertRed,
+        ),
+      );
+    }
+  }
 }
 
 class CropDetailScreen extends ConsumerWidget {
@@ -748,17 +737,23 @@ class _Header extends StatelessWidget {
     final df = DateFormat('dd/MM/yyyy');
     return Row(
       children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: crop.cropType.iconBackground,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            crop.cropType.emoji,
-            style: const TextStyle(fontSize: 32),
+        Semantics(
+          label: 'Cultivo de ${crop.cropType.label}',
+          image: true,
+          child: ExcludeSemantics(
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: crop.cropType.iconBackground,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                crop.cropType.emoji,
+                style: const TextStyle(fontSize: 32),
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -915,6 +910,7 @@ class _ClimateCard extends StatelessWidget {
             children: [
               if (weatherAsync.hasError)
                 IconButton(
+                  tooltip: 'Reintentar carga del clima',
                   icon: const Icon(Icons.refresh, color: Colors.white),
                   onPressed: () {
                     ref.invalidate(currentWeatherProvider(crop.municipality));
@@ -938,9 +934,7 @@ class _ClimateCard extends StatelessWidget {
                 ),
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.white70,
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(48, 48),
                 ),
                 child: const Text('Ver detalle del clima'),
               ),
@@ -958,7 +952,12 @@ class _SyncBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (status) {
+    final label = switch (status) {
+      SyncStatus.SYNCED => 'Sincronizado',
+      SyncStatus.PENDING => 'Pendiente de sincronización',
+      SyncStatus.ERROR => 'Error de sincronización',
+    };
+    final icon = switch (status) {
       SyncStatus.SYNCED => const Icon(
         Icons.cloud_done_outlined,
         size: 18,
@@ -975,5 +974,9 @@ class _SyncBadge extends StatelessWidget {
         color: AppColors.alertRed,
       ),
     };
+    return Tooltip(
+      message: label,
+      child: Semantics(label: label, child: icon),
+    );
   }
 }

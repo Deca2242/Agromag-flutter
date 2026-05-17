@@ -3,7 +3,6 @@ import 'package:sqflite/sqflite.dart';
 import '../../domain/models/crop_event.dart';
 import 'local_db.dart';
 
-/// CRUD de la tabla `crop_events` en SQLite.
 class CropEventsLocalDao {
   const CropEventsLocalDao();
 
@@ -131,8 +130,6 @@ class CropEventsLocalDao {
     );
   }
 
-  /// Marca todos los eventos de un cultivo como pending_delete
-  /// cuando el cultivo fue eliminado en el servidor.
   Future<void> markCropDeletedPending(String cropId) async {
     final db = LocalDb.instance.db;
     await db.update(
@@ -149,6 +146,8 @@ class CropEventsLocalDao {
       'crop_id': event.cropId,
       'event_type': event.eventType.name,
       'notes': event.notes,
+      'quantity': event.quantity,
+      'unit': event.unit,
       'event_date': event.occurredAt.toIso8601String(),
       'created_at': DateTime.now().toIso8601String(),
       'synced': event.synced ? 1 : 0,
@@ -163,6 +162,8 @@ class CropEventsLocalDao {
       eventType: EventType.fromJson(row['event_type'] as String),
       occurredAt: DateTime.parse(row['event_date'] as String),
       notes: row['notes'] as String?,
+      quantity: (row['quantity'] as num?)?.toDouble(),
+      unit: row['unit'] as String?,
       synced: (row['synced'] as int? ?? 1) == 1,
       pendingDelete: (row['pending_delete'] as int? ?? 0) == 1,
     );

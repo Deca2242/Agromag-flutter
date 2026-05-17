@@ -87,14 +87,14 @@ class WeatherDetailsScreen extends ConsumerWidget {
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primaryGreen),
         ),
-        error: (err, _) => Center(
+        error: (_, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'No se pudo cargar el clima.\n$err',
+                  'No se pudo cargar el clima. Verifica la conexión e intenta nuevamente.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: AppColors.textSecondary),
                 ),

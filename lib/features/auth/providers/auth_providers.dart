@@ -13,8 +13,6 @@ import '../../../domain/models/app_role.dart';
 import '../../../domain/models/municipality.dart';
 import '../../../domain/models/profile.dart';
 
-// ── Servicios ──────────────────────────────────────────────────────────────
-
 final authRepositoryProvider = Provider<AuthRepository>(
   (_) => const AuthRepository(),
 );
@@ -23,16 +21,12 @@ final profileRepositoryProvider = Provider<ProfileRepository>(
   (_) => const ProfileRepository(api: ProfileApi(), dao: ProfileLocalDao()),
 );
 
-// ── Estado de sesión ────────────────────────────────────────────────────────
-
 /// Emite la sesión actual cada vez que cambia (login, logout, refresh).
 final authSessionProvider = StreamProvider<Session?>((ref) {
   return Supabase.instance.client.auth.onAuthStateChange.map(
     (event) => event.session,
   );
 });
-
-// ── Perfil del usuario actual ───────────────────────────────────────────────
 
 /// Intenta primero el caché SQLite; si hay sesión activa, sincroniza con el
 /// backend en segundo plano y refresca el estado.
@@ -44,35 +38,41 @@ final currentProfileProvider = FutureProvider<Profile?>((ref) async {
 
   final profileRepo = ref.read(profileRepositoryProvider);
 
-  // 1. Devuelve caché inmediatamente para que la UI no espere.
   final cached = await profileRepo.getCachedProfile(userId: session.user.id);
   if (cached != null) {
-    // Sincroniza en segundo plano sin bloquear.
     unawaited(
-      profileRepo.bootstrapAfterSignIn().then((_) => ref.invalidateSelf()),
+      profileRepo.bootstrapAfterSignIn()
+          .timeout(const Duration(seconds: 15))
+          .then((_) => ref.invalidateSelf())
+          .catchError((_) {}),
     );
     return cached;
   }
 
-  // 2. Sin caché → sincronización inicial (primer login).
   try {
-    return await profileRepo.bootstrapAfterSignIn();
+    return await profileRepo.bootstrapAfterSignIn().timeout(
+      const Duration(seconds: 15),
+    );
   } catch (_) {
-    // Backend no disponible: construir perfil mínimo desde datos locales de Supabase
-    // (user_metadata contiene fullName y municipality guardados en el registro).
     final u = session.user;
     final meta = u.userMetadata ?? {};
+    Municipality fallbackMunicipality;
+    try {
+      final m = meta['municipality'];
+      fallbackMunicipality = m != null
+          ? Municipality.fromJson(m as String)
+          : Municipality.SANTA_MARTA;
+    } catch (_) {
+      fallbackMunicipality = Municipality.SANTA_MARTA;
+    }
     final fallbackProfile = Profile(
       id: u.id,
       email: u.email ?? '',
       role: AppRole.PRODUCER,
       fullName: meta['full_name'] as String? ?? '',
-      municipality: meta['municipality'] != null
-          ? Municipality.fromJson(meta['municipality'] as String)
-          : Municipality.SANTA_MARTA,
+      municipality: fallbackMunicipality,
       createdAt: DateTime.tryParse(u.createdAt) ?? DateTime.now(),
     );
-    // Persiste en SQLite para que esté disponible en arranques offline futuros.
     await profileRepo.getCachedProfile(userId: u.id).then((existing) async {
       if (existing == null) {
         final dao = ProfileLocalDao();
@@ -82,8 +82,6 @@ final currentProfileProvider = FutureProvider<Profile?>((ref) async {
     return fallbackProfile;
   }
 });
-
-// ── Controlador de auth ─────────────────────────────────────────────────────
 
 class AuthController extends AsyncNotifier<void> {
   @override
@@ -97,7 +95,6 @@ class AuthController extends AsyncNotifier<void> {
       () => _auth.signIn(email: email, password: password),
     );
     if (state.hasError) return;
-    // El bootstrap se dispara en currentProfileProvider al detectar sesión.
   }
 
   Future<void> signUp({
@@ -119,7 +116,6 @@ class AuthController extends AsyncNotifier<void> {
 
   Future<void> signOut() async {
     state = const AsyncLoading();
-    // Limpiar todos los datos locales del usuario (crops, weather, events, profile).
     await LocalDb.instance.clearUserData();
     await _auth.signOut();
     state = const AsyncData(null);

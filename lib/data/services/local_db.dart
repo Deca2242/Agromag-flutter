@@ -1,17 +1,6 @@
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
-/// Singleton que gestiona la base de datos SQLite de la app.
-///
-/// Versiones y migraciones:
-///   v1 — tablas `profile` y `auth_state`.
-///   v2 — tabla `crops` con offline-first sync queue.
-///   v3 — columnas pending_update/pending_delete/is_new_local,
-///         tablas `weather_cache` y `crop_events`.
-///   v4 — columna opcional `forecast_json` en `weather_cache` (pronóstico JSON;
-///         alinea BD si antes hubo una build con user_version 4).
-///   v5 — tabla `pending_decisions` para decisiones de recomendaciones offline.
-///   v6 — columna `pending_delete` en `crop_events` para eliminación offline.
 class LocalDb {
   LocalDb._();
 
@@ -31,7 +20,7 @@ class LocalDb {
 
     _db = await openDatabase(
       fullPath,
-      version: 6,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -110,6 +99,8 @@ class LocalDb {
         crop_id TEXT NOT NULL,
         event_type TEXT NOT NULL,
         notes TEXT,
+        quantity REAL,
+        unit TEXT,
         event_date TEXT NOT NULL,
         created_at TEXT NOT NULL,
         synced INTEGER NOT NULL DEFAULT 0,
@@ -145,54 +136,65 @@ class LocalDb {
       await _createCropsTable(db);
     }
     if (oldVersion < 3) {
-      // profile: add pending_update
-      try {
-        await db.execute(
-          'ALTER TABLE profile ADD COLUMN pending_update INTEGER NOT NULL DEFAULT 0',
-        );
-      } catch (_) {}
+      await _addColumnIfMissing(
+        db,
+        'profile',
+        'pending_update',
+        'INTEGER NOT NULL DEFAULT 0',
+      );
 
-      // crops: add pending_delete and is_new_local
-      try {
-        await db.execute(
-          'ALTER TABLE crops ADD COLUMN pending_delete INTEGER NOT NULL DEFAULT 0',
-        );
-      } catch (_) {}
-      try {
-        // Existing crops were synced (came from server) so is_new_local=0
-        await db.execute(
-          'ALTER TABLE crops ADD COLUMN is_new_local INTEGER NOT NULL DEFAULT 0',
-        );
-      } catch (_) {}
+      await _addColumnIfMissing(
+        db,
+        'crops',
+        'pending_delete',
+        'INTEGER NOT NULL DEFAULT 0',
+      );
+      await _addColumnIfMissing(
+        db,
+        'crops',
+        'is_new_local',
+        'INTEGER NOT NULL DEFAULT 0',
+      );
 
       await _createWeatherCacheTable(db);
       await _createCropEventsTable(db);
     }
     if (oldVersion < 4) {
-      try {
-        await db.execute(
-          'ALTER TABLE weather_cache ADD COLUMN forecast_json TEXT',
-        );
-      } catch (_) {}
+      await _addColumnIfMissing(db, 'weather_cache', 'forecast_json', 'TEXT');
     }
     if (oldVersion < 5) {
       await _createPendingDecisionsTable(db);
     }
     if (oldVersion < 6) {
-      try {
-        await db.execute(
-          'ALTER TABLE crop_events ADD COLUMN pending_delete INTEGER NOT NULL DEFAULT 0',
-        );
-      } catch (_) {}
-      try {
-        await db.execute(
-          'CREATE INDEX idx_events_pending_delete ON crop_events(pending_delete)',
-        );
-      } catch (_) {}
+      await _addColumnIfMissing(
+        db,
+        'crop_events',
+        'pending_delete',
+        'INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_events_pending_delete ON crop_events(pending_delete)',
+      );
+    }
+    if (oldVersion < 7) {
+      await _addColumnIfMissing(db, 'crop_events', 'quantity', 'REAL');
+      await _addColumnIfMissing(db, 'crop_events', 'unit', 'TEXT');
     }
   }
 
-  /// Borra todos los datos del usuario para logout limpio.
+  static Future<void> _addColumnIfMissing(
+    Database db,
+    String table,
+    String column,
+    String type,
+  ) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = columns.any((row) => row['name'] == column);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $column $type');
+    }
+  }
+
   Future<void> clearUserData() async {
     final db = _db;
     if (db == null) return;
@@ -204,15 +206,6 @@ class LocalDb {
     await db.delete('pending_decisions');
   }
 
-  /// Limpia datos antiguos ya sincronizados para evitar crecimiento indefinido de la BD.
-  ///
-  /// Reglas de purga:
-  ///   - crops con pending_delete=1 → borrado físico (ya confirmados por servidor).
-  ///   - crop_events con synced=1 y older than 30 días → se pueden re-descargar.
-  ///   - weather_cache con fetched_at older than 24h → se refresca automáticamente.
-  ///   - pending_decisions → NO se purgan aquí (se borran tras sync exitoso).
-  ///
-  /// Debe llamarse tras un sync exitoso (isFullSuccess).
   Future<void> purgeOldSyncedData() async {
     final db = _db;
     if (db == null) return;
@@ -225,16 +218,14 @@ class LocalDb {
         .subtract(const Duration(hours: 24))
         .toIso8601String();
 
-    // 1. Cultivos marcados para borrar (ya sincronizados con servidor)
-    await db.delete('crops', where: 'pending_delete = 1');
+    // Los tombstones evitan que un pull reviva cultivos borrados localmente.
+    // No se purgan automáticamente hasta tener confirmación remota explícita.
 
-    // 2. Eventos sincronizados older than 30 días
     await db.rawDelete(
       'DELETE FROM crop_events WHERE synced = 1 AND event_date < ?',
       [thirtyDaysAgo],
     );
 
-    // 3. Weather cache older than 24h
     await db.rawDelete('DELETE FROM weather_cache WHERE fetched_at < ?', [
       twentyFourHoursAgo,
     ]);
