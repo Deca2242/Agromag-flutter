@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class ChatInput extends StatefulWidget {
-  const ChatInput({super.key, this.onSend, this.enabled = true});
+  const ChatInput({
+    super.key,
+    this.onSend,
+    this.enabled = true,
+    this.disabledHintText,
+  });
 
   final ValueChanged<String>? onSend;
   final bool enabled;
+  final String? disabledHintText;
 
   @override
   State<ChatInput> createState() => _ChatInputState();
@@ -57,7 +63,7 @@ class _ChatInputState extends State<ChatInput> {
                   decoration: InputDecoration(
                     hintText: widget.enabled
                         ? 'Escribe tu consulta aquí...'
-                        : 'Asistente no disponible sin conexión',
+                        : widget.disabledHintText ?? 'Escribe tu consulta aquí...',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,

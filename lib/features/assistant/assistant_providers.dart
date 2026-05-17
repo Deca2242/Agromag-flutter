@@ -98,6 +98,15 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
         if (kDebugMode) print('[Chat SSE] Event: ${event['type']}');
 
         switch (event['type']) {
+          case 'status':
+            if (accumulatedText.isEmpty) {
+              state = [
+                ...state.where((m) => m.id != streamId),
+                streamingMsg.copyWith(text: event['data'] as String? ?? ''),
+              ];
+            }
+            break;
+
           case 'token':
             accumulatedText.write(event['data']);
             state = [
@@ -146,6 +155,15 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
           suggestions: newSuggestions,
         );
         state = [...state.where((m) => m.id != streamId), finalMsg];
+      } else {
+        final errorMsg = ChatMessage(
+          id: '${DateTime.now().millisecondsSinceEpoch}_err',
+          author: ChatAuthor.bot,
+          text: 'El asistente no envió una respuesta. Intenta de nuevo.',
+          time: DateFormat('hh:mm a').format(DateTime.now()),
+          isError: true,
+        );
+        state = [...state.where((m) => m.id != streamId), errorMsg];
       }
     } catch (e) {
       if (kDebugMode) print('[Chat SSE] Error: $e');

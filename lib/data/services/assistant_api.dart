@@ -91,15 +91,14 @@ class AssistantApi {
       return;
     }
 
-    final bytesStream = response.stream;
-    final utf8Decoder = const Utf8Decoder();
+    final textStream = response.stream.transform(const Utf8Decoder());
 
     String buffer = '';
     String currentEvent = 'message';
     final currentData = StringBuffer();
 
-    await for (final chunk in bytesStream) {
-      buffer += utf8Decoder.convert(chunk);
+    await for (final chunk in textStream) {
+      buffer += chunk;
 
       while (true) {
         final newlineIndex = buffer.indexOf('\n');
@@ -126,6 +125,8 @@ class AssistantApi {
               yield {'type': 'done'};
             } else if (currentEvent == 'error') {
               yield {'type': 'error', 'data': data};
+            } else if (currentEvent == 'status') {
+              yield {'type': 'status', 'data': data};
             }
           }
           currentEvent = 'message';
@@ -164,6 +165,8 @@ class AssistantApi {
         yield {'type': 'done'};
       } else if (currentEvent == 'error') {
         yield {'type': 'error', 'data': data};
+      } else if (currentEvent == 'status') {
+        yield {'type': 'status', 'data': data};
       }
     }
   }

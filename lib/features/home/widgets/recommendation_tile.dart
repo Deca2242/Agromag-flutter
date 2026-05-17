@@ -31,6 +31,12 @@ class RecommendationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final icon = switch (recommendation.type) {
+      RecommendationType.irrigation => Icons.water_drop_outlined,
+      RecommendationType.fertilizer => Icons.eco_outlined,
+      RecommendationType.phytosanitary => Icons.bug_report_outlined,
+      null => Icons.tips_and_updates_outlined,
+    };
     final inner = Row(
       children: [
         Container(
@@ -51,7 +57,7 @@ class RecommendationTile extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: Icon(
-            IconData(recommendation.iconCodePoint, fontFamily: 'MaterialIcons'),
+            icon,
             color: recommendation.accentColor,
             size: 20,
           ),

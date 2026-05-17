@@ -64,6 +64,7 @@ class AssistantScreen extends ConsumerWidget {
                 ),
               ChatInput(
                 enabled: !isWaiting,
+                disabledHintText: 'AGROBOT está respondiendo...',
                 onSend: notifier.sendStreamMessage,
               ),
             ],
@@ -89,7 +90,7 @@ class _MessagesListState extends State<_MessagesList> {
   @override
   void didUpdateWidget(_MessagesList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.messages.length != oldWidget.messages.length) {
+    if (_shouldScroll(oldWidget.messages, widget.messages)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollCtrl.hasClients) {
           _scrollCtrl.animateTo(
@@ -100,6 +101,18 @@ class _MessagesListState extends State<_MessagesList> {
         }
       });
     }
+  }
+
+  bool _shouldScroll(List<ChatMessage> oldMessages, List<ChatMessage> messages) {
+    if (messages.length != oldMessages.length) {
+      return true;
+    }
+    if (messages.isEmpty || oldMessages.isEmpty) {
+      return false;
+    }
+    final last = messages.last;
+    final oldLast = oldMessages.last;
+    return last.id == oldLast.id && last.text != oldLast.text;
   }
 
   @override

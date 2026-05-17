@@ -37,6 +37,12 @@ class AlertCard extends ConsumerWidget {
 
   Widget _buildIcon() {
     final p = _palette();
+    final icon = switch (alert.category) {
+      AlertCategory.irrigation => Icons.water_drop,
+      AlertCategory.fertilization => Icons.eco,
+      AlertCategory.phytosanitary => Icons.bug_report,
+      AlertCategory.climate => Icons.cloud_outlined,
+    };
     if (alert.severity == AlertSeverity.high) {
       return Container(
         width: 36,
@@ -62,10 +68,7 @@ class AlertCard extends ConsumerWidget {
       ),
       alignment: Alignment.center,
       child: Icon(
-        IconData(
-          alert.iconCodePoint,
-          fontFamily: 'MaterialIcons',
-        ),
+        icon,
         color: p.iconFg,
         size: 18,
       ),
