@@ -7,9 +7,13 @@ import '../../data/services/crop_events_api.dart';
 import '../../data/services/crop_events_local_dao.dart';
 import '../../data/services/crops_api.dart';
 import '../../data/services/crops_local_dao.dart';
+import '../../data/services/offline_rule_engine.dart';
 import '../../data/services/pending_decisions_local_dao.dart';
+import '../../data/services/recommendation_params_local_dao.dart';
 import '../../data/services/recommendations_api.dart';
+import '../../data/services/recommendations_local_dao.dart';
 import '../../data/services/sync_api.dart';
+import '../../data/services/weather_local_dao.dart';
 import '../../domain/models/crop.dart';
 import '../../domain/models/crop_event.dart';
 import '../auth/providers/auth_providers.dart';
@@ -21,6 +25,8 @@ final cropsRepositoryProvider = Provider<CropsRepository>((ref) {
     dao: CropsLocalDao(),
     api: CropsApi(),
     syncApi: SyncApi(),
+    recommendationsDao: RecommendationsLocalDao(),
+    decisionsDao: PendingDecisionsLocalDao(),
   );
 });
 
@@ -73,8 +79,14 @@ final recommendationsRepositoryProvider = Provider<RecommendationsRepository>((
   ref,
 ) {
   return RecommendationsRepository(
-    api: RecommendationsApi(),
-    decisionsDao: PendingDecisionsLocalDao(),
+    api: const RecommendationsApi(),
+    decisionsDao: const PendingDecisionsLocalDao(),
+    localDao: const RecommendationsLocalDao(),
+    weatherDao: const WeatherLocalDao(),
+    ruleEngine: OfflineRuleEngine(
+      paramsDao: const RecommendationParamsLocalDao(),
+    ),
+    paramsDao: const RecommendationParamsLocalDao(),
   );
 });
 

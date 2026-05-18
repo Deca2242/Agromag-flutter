@@ -32,6 +32,17 @@ extension CropTypeX on CropType {
     CropType.PALMA => 'Palma',
   };
 
+  // Plagas y enfermedades comunes en el Magdalena para este cultivo.
+  // Réplica del enum CropType.getCommonPests() del backend Java.
+  String get commonPests => switch (this) {
+    CropType.BANANO => 'sigatoka negra, moko (Ralstonia solanacearum), picudo negro (Cosmopolites sordidus), nematodos, trips',
+    CropType.MANGO => 'mosca de la fruta (Anastrepha obliqua), antracnosis (Colletotrichum gloeosporioides), oidio, trips',
+    CropType.YUCA => 'mosca blanca (Bemisia tabaci), ácaros rojos (Mononychellus tanajoa), bacteriosis (Xanthomonas axonopodis)',
+    CropType.PLATANO => 'sigatoka negra, moko (Ralstonia solanacearum), picudo negro (Cosmopolites sordidus), nematodos, bacteriosis',
+    CropType.MAIZ => 'cogollero (Spodoptera frugiperda), chicharrita (Dalbulus maidis), roya, pudrición de mazorca',
+    CropType.PALMA => 'Rhynchophorus palmarum, pudrición del cogollo (Phytophthora palmivora), pudrición basal (Ganoderma spp.)',
+  };
+
   String get emoji => switch (this) {
     CropType.BANANO => '🍌',
     CropType.MANGO => '🥭',

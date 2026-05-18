@@ -101,4 +101,18 @@ class RecommendationsApi {
       throw e.error ?? const ServerException();
     }
   }
+
+  /// Obtiene los umbrales del motor de reglas del backend para mantener
+  /// el OfflineRuleEngine sincronizado con la configuración del servidor.
+  Future<Map<String, String>> fetchParameters() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/recommendations/parameters',
+      );
+      final data = response.data ?? {};
+      return data.map((k, v) => MapEntry(k, v.toString()));
+    } on DioException catch (e) {
+      throw e.error ?? const ServerException();
+    }
+  }
 }

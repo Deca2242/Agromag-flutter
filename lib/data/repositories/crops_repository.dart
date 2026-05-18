@@ -8,6 +8,8 @@ import '../../core/utils/uuid_generator.dart';
 import '../services/crop_sync_conflict.dart';
 import '../services/crops_api.dart';
 import '../services/crops_local_dao.dart';
+import '../services/pending_decisions_local_dao.dart';
+import '../services/recommendations_local_dao.dart';
 import '../services/sync_api.dart';
 import '../../domain/models/crop.dart';
 import '../../domain/models/crop_type.dart';
@@ -40,13 +42,19 @@ class CropsRepository {
     required CropsLocalDao dao,
     required CropsApi api,
     required SyncApi syncApi,
+    required RecommendationsLocalDao recommendationsDao,
+    required PendingDecisionsLocalDao decisionsDao,
   }) : _dao = dao,
        _api = api,
-       _syncApi = syncApi;
+       _syncApi = syncApi,
+       _recommendationsDao = recommendationsDao,
+       _decisionsDao = decisionsDao;
 
   final CropsLocalDao _dao;
   final CropsApi _api;
   final SyncApi _syncApi;
+  final RecommendationsLocalDao _recommendationsDao;
+  final PendingDecisionsLocalDao _decisionsDao;
 
   /// Persiste el cultivo localmente con PENDING y dispara sync en background.
   Future<Crop> createCropOffline({
@@ -89,14 +97,24 @@ class CropsRepository {
     await _dao.markDeletedPending(id);
     try {
       await _api.delete(id);
-      await _dao.deleteLocal(id);
+      await _deleteCropLocalDataCascade(id);
     } on NotFoundException {
-      await _dao.deleteLocal(id);
+      await _deleteCropLocalDataCascade(id);
     } on NetworkException {
       // Se mantiene oculto localmente y se reintentará al reconectar.
     } catch (_) {
       await _dao.markError([id]);
     }
+  }
+
+  // Elimina todos los datos locales asociados a un cultivo:
+  // decisiones pendientes, cache de recomendaciones y la fila del cultivo.
+  Future<void> _deleteCropLocalDataCascade(String cropId) async {
+    final recs = await _recommendationsDao.listByCrop(cropId);
+    final recIds = recs.map((r) => r.id).toList();
+    await _decisionsDao.deleteByRecommendationIds(recIds);
+    await _recommendationsDao.deleteByCrop(cropId);
+    await _dao.deleteLocal(cropId);
   }
 
   /// Retorna cultivos desde SQLite; si hay red también hace refresh en background.
@@ -209,10 +227,10 @@ class CropsRepository {
     for (final crop in toDelete) {
       try {
         await _api.delete(crop.id);
-        await _dao.deleteLocal(crop.id);
+        await _deleteCropLocalDataCascade(crop.id);
         synced++;
       } on NotFoundException {
-        await _dao.deleteLocal(crop.id);
+        await _deleteCropLocalDataCascade(crop.id);
         synced++;
       } on NetworkException {
         failed++;

@@ -73,6 +73,18 @@ class PendingDecisionsLocalDao {
     );
   }
 
+  // Elimina decisiones pendientes por recommendation_id.
+  // Se usa en el borrado en cascada al eliminar un cultivo.
+  Future<void> deleteByRecommendationIds(List<String> recommendationIds) async {
+    if (recommendationIds.isEmpty) return;
+    final db = LocalDb.instance.db;
+    final placeholders = List.filled(recommendationIds.length, '?').join(',');
+    await db.rawDelete(
+      'DELETE FROM $_table WHERE recommendation_id IN ($placeholders)',
+      recommendationIds,
+    );
+  }
+
   Future<void> clear() async {
     final db = LocalDb.instance.db;
     await db.delete(_table);

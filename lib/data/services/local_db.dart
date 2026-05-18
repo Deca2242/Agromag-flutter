@@ -20,7 +20,7 @@ class LocalDb {
 
     _db = await openDatabase(
       fullPath,
-      version: 7,
+      version: 9,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -58,6 +58,8 @@ class LocalDb {
     await _createWeatherCacheTable(db);
     await _createCropEventsTable(db);
     await _createPendingDecisionsTable(db);
+    await _createRecommendationsCacheTable(db);
+    await _createRecommendationParamsCacheTable(db);
   }
 
   static Future<void> _createCropsTable(Database db) async {
@@ -127,6 +129,40 @@ class LocalDb {
     );
   }
 
+  static Future<void> _createRecommendationsCacheTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE recommendations_cache (
+        id TEXT PRIMARY KEY,
+        crop_id TEXT NOT NULL,
+        type TEXT,
+        level TEXT NOT NULL,
+        message TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'RULE_LOCAL',
+        generated_at TEXT NOT NULL,
+        crop_type TEXT,
+        followed INTEGER
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_rec_cache_crop ON recommendations_cache(crop_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_rec_cache_followed ON recommendations_cache(followed)',
+    );
+  }
+
+  static Future<void> _createRecommendationParamsCacheTable(
+    Database db,
+  ) async {
+    await db.execute('''
+      CREATE TABLE recommendation_params_cache (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+  }
+
   static Future<void> _onUpgrade(
     Database db,
     int oldVersion,
@@ -180,6 +216,12 @@ class LocalDb {
       await _addColumnIfMissing(db, 'crop_events', 'quantity', 'REAL');
       await _addColumnIfMissing(db, 'crop_events', 'unit', 'TEXT');
     }
+    if (oldVersion < 8) {
+      await _createRecommendationsCacheTable(db);
+    }
+    if (oldVersion < 9) {
+      await _createRecommendationParamsCacheTable(db);
+    }
   }
 
   static Future<void> _addColumnIfMissing(
@@ -204,6 +246,7 @@ class LocalDb {
     await db.delete('crop_events');
     await db.delete('auth_state');
     await db.delete('pending_decisions');
+    await db.delete('recommendations_cache');
   }
 
   Future<void> purgeOldSyncedData() async {

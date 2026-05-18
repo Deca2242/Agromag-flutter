@@ -1,11 +1,10 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/network/api_client.dart';
+import '../../core/network/connectivity_checker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/repositories/crops_repository.dart';
 import '../../data/services/crop_sync_conflict.dart';
@@ -306,21 +305,11 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
   }
 
   Future<bool> _verifyConnectivity() async {
-    try {
-      final response = await ApiClient.instance.dio.get(
-        '/api/health',
-        options: Options(
-          receiveTimeout: const Duration(seconds: 5),
-          sendTimeout: const Duration(seconds: 5),
-        ),
-      );
-      final isOk = response.statusCode == 200;
-      debugPrint('[SYNC] Conectividad: ${isOk ? "OK" : "FALLÓ"}');
-      return isOk;
-    } catch (e) {
-      debugPrint('[SYNC] Conectividad falló: $e');
-      return false;
-    }
+    final isOk = await ConnectivityChecker.instance.isReachable(
+      forceCheck: true,
+    );
+    debugPrint('[SYNC] Conectividad: ${isOk ? "OK" : "FALLÓ"}');
+    return isOk;
   }
 
   Future<ManualSyncResult> _runFullSync({required String profileId}) async {
@@ -377,6 +366,14 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
         describe: _describeBool,
       );
 
+      // Sincronizar parámetros del motor de reglas (umbrales desde backend)
+      await _runSyncStep(
+        label: 'Sync parámetros motor de reglas',
+        fallback: false,
+        action: recommendationsRepo.syncRuleParameters,
+        describe: _describeBool,
+      );
+
       final pullResult = await _runSyncStep(
         label: 'Pull cultivos',
         fallback: const PullCropsResult(success: false, conflicts: []),
@@ -411,8 +408,19 @@ class SyncCoordinatorNotifier extends Notifier<bool> {
         describe: _describeBool,
       );
 
+      // Reemplazar recomendaciones RULE_LOCAL por versiones del backend (IA + reglas)
+      for (final id in cropIds) {
+        await _runSyncStep(
+          label: 'Refresh recomendaciones cultivo $id',
+          fallback: <dynamic>[],
+          action: () => recommendationsRepo.listPendingByCrop(id),
+          describe: (list) => '${list.length} pendientes',
+        );
+      }
+
       for (final id in cropIds) {
         ref.invalidate(cropEventsProvider(id));
+        ref.invalidate(cropRecommendationsProvider(id));
       }
 
       ref.invalidate(cropsProvider);

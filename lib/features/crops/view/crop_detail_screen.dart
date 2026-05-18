@@ -288,7 +288,7 @@ class _DetailContent extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (online) GenerateRecommendationsButton(cropId: crop.id),
+                    GenerateRecommendationsButton(cropId: crop.id),
                     const SizedBox(height: 24),
                     Text(
                       'Historial de decisiones',
@@ -516,8 +516,8 @@ class _RecommendationDecisionsHistorySectionState
     final pageNum = isInitial ? 0 : _nextPageToFetch;
     try {
       final page = await ref
-          .read(recommendationsApiProvider)
-          .listByCropPaged(
+          .read(recommendationsRepositoryProvider)
+          .listByCropPagedWithFallback(
             widget.cropId,
             followedFilter: 'decided',
             page: pageNum,
@@ -545,7 +545,9 @@ class _RecommendationDecisionsHistorySectionState
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudo cargar el historial.';
+        _error = widget.online
+            ? 'No se pudo cargar el historial.'
+            : 'Historial no disponible sin conexión para este cultivo.';
         _loading = false;
         _loadingMore = false;
       });

@@ -78,6 +78,28 @@ class RecommendationTile extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (recommendation.isOffline) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningAmberSoft,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Offline',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.cropTextBrown,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                   _badge(),
                 ],
               ),
