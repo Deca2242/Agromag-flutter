@@ -15,7 +15,7 @@ List<ChatMessage> _initialMessages() => [
     id: '0',
     author: ChatAuthor.bot,
     text:
-        '¡Hola! Soy AGROBOT, tu asistente agrícola impulsado por DeepSeek vía OpenRouter. '
+        '¡Hola! Soy AGROBOT, tu asistente agrícola de Agromag. '
         'Puedo ayudarte con tus cultivos registrados, alertas, recomendaciones, clima, '
         'riego, plagas, fertilización u otras labores.',
     time: DateFormat('hh:mm a').format(DateTime.now()),
@@ -159,7 +159,7 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
         final errorMsg = ChatMessage(
           id: '${DateTime.now().millisecondsSinceEpoch}_err',
           author: ChatAuthor.bot,
-          text: 'El asistente no envió una respuesta. Intenta de nuevo.',
+          text: 'AGROBOT no pudo generar una respuesta en este momento. Intenta de nuevo o reformula tu pregunta.',
           time: DateFormat('hh:mm a').format(DateTime.now()),
           isError: true,
         );

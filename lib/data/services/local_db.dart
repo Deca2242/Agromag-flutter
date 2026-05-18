@@ -247,6 +247,7 @@ class LocalDb {
     await db.delete('auth_state');
     await db.delete('pending_decisions');
     await db.delete('recommendations_cache');
+    await db.delete('recommendation_params_cache');
   }
 
   Future<void> purgeOldSyncedData() async {

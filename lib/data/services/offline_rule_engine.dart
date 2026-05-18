@@ -6,34 +6,29 @@ import '../../domain/models/recommendation.dart';
 import '../../domain/models/weather.dart';
 import 'recommendation_params_local_dao.dart';
 
-// Motor de reglas agronómicas offline.
-// Replica la lógica de RecommendationService.java del backend Spring Boot.
-// Opera completamente sin conexión usando cultivos locales, clima cacheado
-// y parámetros agronómicos embebidos (o actualizados desde el backend).
+/// Motor de reglas agronómicas offline.
+///
+/// Replica la lógica del backend para operar sin conexión usando clima cacheado
+/// y parámetros agronómicos sincronizados (con fallback a valores embebidos).
 class OfflineRuleEngine {
   OfflineRuleEngine({required RecommendationParamsLocalDao paramsDao})
       : _paramsDao = paramsDao;
 
   final RecommendationParamsLocalDao _paramsDao;
 
-  // Cache interno de umbrales; se carga la primera vez que se necesita.
   OfflineRuleDefaults? _defaults;
 
-
-  // Carga los umbrales desde SQLite (o usa los valores de respaldo hardcoded).
-  // Resultado cacheado en memoria para llamadas subsiguientes.
   Future<OfflineRuleDefaults> _getDefaults() async {
     _defaults ??= await _paramsDao.loadOrFallback();
     return _defaults!;
   }
 
-  // Fuerza recarga de los umbrales desde SQLite (llamar después de un sync).
+  /// Fuerza recarga de umbrales tras un sync para que el motor use
+  /// los parámetros más recientes del backend.
   Future<void> warmUp() async {
     _defaults = await _paramsDao.loadOrFallback();
   }
 
-  // Evalúa las tres reglas (riego, fertilización, fitosanitario) para un cultivo.
-  // Devuelve lista de 3 resultados en el mismo orden.
   Future<List<OfflineRecommendationResult>> evaluateAll(
     Crop crop,
     CurrentWeather? weather,
@@ -53,11 +48,6 @@ class OfflineRuleEngine {
     ];
   }
 
-  // Regla de riego:
-  // HIGH si temp excede máxima óptima o humedad está por debajo del mínimo.
-  // MEDIUM si temp está cerca de exceder el máximo (dentro del delta configurado).
-  // LOW si todo está en rango óptimo.
-  // Si no hay datos de clima muestra mensaje informativo con nivel LOW.
   OfflineRecommendationResult _computeIrrigation(
     Crop crop,
     CurrentWeather? weather,
@@ -121,10 +111,6 @@ class OfflineRuleEngine {
     );
   }
 
-  // Regla de fertilización:
-  // Determina la etapa del cultivo según semanas transcurridas desde la siembra
-  // y recomienda el nutriente correspondiente.
-  // No requiere datos de clima.
   OfflineRecommendationResult _computeFertilizer(
     Crop crop,
     CropParameters params,
@@ -165,11 +151,6 @@ class OfflineRuleEngine {
     );
   }
 
-  // Regla fitosanitaria:
-  // HIGH si temperatura Y humedad superan ambos umbrales (condición de doble riesgo).
-  // MEDIUM si solo uno de los dos factores supera el umbral.
-  // LOW si las condiciones están dentro del rango normal.
-  // Si no hay datos de clima muestra mensaje informativo con nivel LOW.
   OfflineRecommendationResult _computePhytosanitary(
     Crop crop,
     CurrentWeather? weather,
@@ -232,7 +213,6 @@ class OfflineRuleEngine {
     );
   }
 
-  // Resultados de fallback cuando no hay parámetros disponibles para el tipo de cultivo.
   List<OfflineRecommendationResult> _fallbackResults(Crop crop, DateTime now) {
     const fallbackMessage =
         'No se pudieron calcular parámetros locales para este cultivo. '

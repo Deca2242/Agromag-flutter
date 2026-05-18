@@ -129,6 +129,10 @@ class ProfileRepository {
   Future<bool> hasPendingProfileUpdate() async =>
       (await _dao.findPendingUpdate()) != null;
 
+  /// Persiste un perfil en SQLite (p. ej. perfil de emergencia construido desde
+  /// user_metadata cuando el backend no está disponible).
+  Future<void> cacheProfile(Profile profile) => _dao.upsert(profile);
+
   /// Limpia el caché de perfil al cerrar sesión.
   Future<void> clearLocalProfile() async {
     await _dao.clear();

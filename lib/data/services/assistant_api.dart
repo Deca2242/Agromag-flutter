@@ -122,10 +122,11 @@ class AssistantApi {
         }
 
         if (line.startsWith('data:')) {
-          var dataPart = line.substring(5);
-          if (dataPart.startsWith(' ')) {
-            dataPart = dataPart.substring(1);
-          }
+          // Spring SseEmitter emite 'data:VALUE' sin espacio separador.
+          // No se elimina el espacio inicial porque puede ser un token de
+          // espacio real del LLM (ej: ' mundo' o ' '). Eliminarlo produce
+          // palabras concatenadas sin espacios en el cliente.
+          final dataPart = line.substring(5);
           if (currentData.isNotEmpty) {
             currentData.write('\n');
           }

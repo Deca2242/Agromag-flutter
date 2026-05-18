@@ -113,23 +113,27 @@ class CropsLocalDao {
   /// Marca un tombstone local para ocultar el cultivo hasta confirmar el borrado remoto.
   Future<void> markDeletedPending(String id) async {
     final db = LocalDb.instance.db;
-    await db.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
-    await db.update(
-      _table,
-      {
-        'pending_delete': 1,
-        'sync_status': SyncStatus.PENDING.name,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.transaction((txn) async {
+      await txn.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
+      await txn.update(
+        _table,
+        {
+          'pending_delete': 1,
+          'sync_status': SyncStatus.PENDING.name,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    });
   }
 
   Future<void> deleteLocal(String id) async {
     final db = LocalDb.instance.db;
-    await db.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
-    await db.delete(_table, where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      await txn.delete('crop_events', where: 'crop_id = ?', whereArgs: [id]);
+      await txn.delete(_table, where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   Future<void> markSynced(List<String> ids) async {

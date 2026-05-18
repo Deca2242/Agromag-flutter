@@ -75,8 +75,7 @@ final currentProfileProvider = FutureProvider<Profile?>((ref) async {
     );
     await profileRepo.getCachedProfile(userId: u.id).then((existing) async {
       if (existing == null) {
-        final dao = ProfileLocalDao();
-        await dao.upsert(fallbackProfile);
+        await profileRepo.cacheProfile(fallbackProfile);
       }
     });
     return fallbackProfile;

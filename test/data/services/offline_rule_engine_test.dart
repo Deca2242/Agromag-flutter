@@ -220,9 +220,9 @@ void main() {
 
     group('fitosanitario', () {
       test('nivel ALERT cuando temperatura Y humedad superan umbral', () async {
-        // defaults: phytoTemp=28, phytoHum=80
+        // defaults: phytoTemp=30, phytoHum=80
         final crop = makeCrop(type: CropType.MAIZ);
-        final weather = makeWeather(temperature: 29.0, humidity: 85.0);
+        final weather = makeWeather(temperature: 31.0, humidity: 85.0);
 
         final results = await engine.evaluateAll(crop, weather);
         final phyto = results.firstWhere(
@@ -236,7 +236,7 @@ void main() {
 
       test('nivel MEDIUM cuando solo temperatura supera umbral', () async {
         final crop = makeCrop(type: CropType.MAIZ);
-        final weather = makeWeather(temperature: 29.0, humidity: 70.0);
+        final weather = makeWeather(temperature: 31.0, humidity: 70.0);
 
         final results = await engine.evaluateAll(crop, weather);
         final phyto = results.firstWhere(

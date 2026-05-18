@@ -12,9 +12,10 @@ import '../services/recommendations_api.dart';
 import '../services/recommendations_local_dao.dart';
 import '../services/weather_local_dao.dart';
 
-// Repositorio de recomendaciones con estrategia online/offline.
-// Si hay conexión: usa la API del backend (reglas + IA).
-// Si no hay conexión: usa el motor de reglas local con clima cacheado.
+/// Repositorio de recomendaciones con estrategia online/offline.
+///
+/// Online: delega a la API del backend (reglas + IA).
+/// Offline: usa el motor de reglas local con clima cacheado.
 class RecommendationsRepository {
   RecommendationsRepository({
     required RecommendationsApi api,
@@ -37,7 +38,8 @@ class RecommendationsRepository {
   final OfflineRuleEngine _ruleEngine;
   final RecommendationParamsLocalDao _paramsDao;
 
-  // Genera un ID único simple para recomendaciones locales sin depender de uuid.
+  /// UUID ligero para recomendaciones generadas localmente.
+  /// No usa el paquete uuid para evitar la dependencia en contextos offline puros.
   static String _generateId() {
     final ts = DateTime.now().microsecondsSinceEpoch;
     final rnd = math.Random().nextInt(0xFFFFFF);
@@ -89,8 +91,6 @@ class RecommendationsRepository {
   Future<void> resetDecision(String recommendationId) =>
       _api.resetDecision(recommendationId);
 
-  // Lista recomendaciones pendientes de un cultivo.
-  // Si falla la red, retorna las almacenadas localmente.
   Future<List<Recommendation>> listByCrop(String cropId) async {
     try {
       final result = await _api.listByCrop(cropId);
@@ -103,10 +103,8 @@ class RecommendationsRepository {
     }
   }
 
-  // Lista recomendaciones pendientes de un cultivo, cacheando el resultado.
-  // Antes de insertar desde el backend, elimina las versiones RULE_LOCAL del
-  // mismo tipo para que la versión AI/RULE del servidor tenga prioridad.
-  // En caso de error de red, cae al cache local.
+  /// Antes de cachear resultados del backend, elimina las versiones RULE_LOCAL
+  /// del mismo tipo para que la versión del servidor tenga prioridad.
   Future<List<Recommendation>> listPendingByCrop(
     String cropId, {
     int size = 5,
@@ -136,9 +134,6 @@ class RecommendationsRepository {
     }
   }
 
-  // Lista paginada con fallback offline.
-  // Online: llama a la API y cachea pending; no cachea decided (historial grande).
-  // Offline / NetworkException: usa SQLite local.
   Future<RecommendationPage> listByCropPagedWithFallback(
     String cropId, {
     String followedFilter = 'any',
@@ -184,11 +179,6 @@ class RecommendationsRepository {
     );
   }
 
-  // Genera las 3 recomendaciones offline para un cultivo usando el motor de reglas local.
-  // Si hay clima cacheado, genera las 3 reglas completas.
-  // Si no hay clima, genera solo la regla de fertilización (no depende de clima)
-  // y mensajes informativos para riego y fitosanitario.
-  // Siempre persiste los resultados para que sobrevivan reinicios.
   Future<List<Recommendation>> generateOffline(Crop crop) async {
     final weather = await _weatherDao.find(crop.municipality);
 
@@ -202,13 +192,9 @@ class RecommendationsRepository {
     return recommendations;
   }
 
-  // Lista hasta [limit] recomendaciones pendientes de todos los cultivos desde caché local.
-  // Se usa como fallback del dashboard cuando no hay conexión.
   Future<List<Recommendation>> listPendingFromCache({int limit = 3}) =>
       _localDao.listPendingAll(limit: limit);
 
-  // Sincroniza los parámetros del motor de reglas con el backend.
-  // Retorna true si el sync fue exitoso.
   Future<bool> syncRuleParameters() async {
     try {
       final params = await _api.fetchParameters();
