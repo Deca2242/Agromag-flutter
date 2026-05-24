@@ -38,6 +38,8 @@ Future<void> _openRecommendationDecision(
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    useSafeArea: true,
+    isScrollControlled: true,
     builder: (ctx) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -50,11 +52,15 @@ Future<void> _openRecommendationDecision(
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            Text(
-              recommendation.body,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
+            Flexible(
+              child: SingleChildScrollView(
+                child: Text(
+                  recommendation.body,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
