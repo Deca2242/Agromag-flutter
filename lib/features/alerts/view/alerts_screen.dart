@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
+import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/branded_app_bar.dart';
 import '../../crops/crops_providers.dart';
 import '../../home/home_providers.dart';
@@ -109,6 +110,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           ),
         ],
       ),
+      drawer: const AppDrawer(),
       body: SafeArea(
         top: false,
         child: AdaptiveBody(

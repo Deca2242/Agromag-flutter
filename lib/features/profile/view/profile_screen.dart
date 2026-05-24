@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/adaptive_body.dart';
+import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/branded_app_bar.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../domain/models/profile.dart';
@@ -31,6 +32,7 @@ class ProfileScreen extends ConsumerWidget {
         isSyncing: ref.watch(syncCoordinatorProvider),
         onSyncTap: () => requestSyncFromAppBar(context, ref),
       ),
+      drawer: const AppDrawer(),
       body: SafeArea(
         top: false,
         child: AdaptiveBody(

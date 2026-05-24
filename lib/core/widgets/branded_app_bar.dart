@@ -49,7 +49,7 @@ class BrandedAppBar extends StatelessWidget implements PreferredSizeWidget {
           leading ??
           (showMenu
               ? IconButton(
-                  onPressed: () {},
+                  onPressed: () => Scaffold.of(context).openDrawer(),
                   icon: const Icon(Icons.menu),
                   tooltip: 'Abrir menú',
                   color: AppColors.textPrimary,
